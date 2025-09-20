@@ -1,0 +1,13 @@
+# Air config for Gothic Forge
+root = "."
+
+[build]
+cmd = "go build -o ./tmp/server.exe ./cmd/server"
+bin = "./tmp/server.exe"
+delay = 1000
+kill_delay = 500
+exclude_dir = [".git", "tmp", "bin", "dist", "node_modules", ".github"]
+include_ext = ["go", "templ", "css", "html"]
+
+[log]
+level = "info"

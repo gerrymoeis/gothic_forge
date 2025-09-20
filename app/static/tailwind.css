@@ -1,0 +1,2 @@
+/* Gothic Forge extras: dark background fallback when Tailwind not built yet */
+body { background-color: #0b0b12; }
