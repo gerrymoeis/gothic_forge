@@ -77,6 +77,7 @@ gotailwindcss build -o app/static/styles.css app/static/tailwind.input.css
 - `/favicon.ico` — 301 → `/static/favicon.svg`
 - `/robots.txt` — Static robots, points to `/sitemap.xml`
 - `/sitemap.xml` — Static sitemap (update URLs for production)
+- `/db/ping` — DB connectivity probe (returns ok=false when `DATABASE_URL` is not set)
 - `/static/*` — Static files (CSS, favicon, etc.)
 
 ## 404 page
@@ -135,6 +136,21 @@ Update SEO assets for production:
 - Edit meta tags in `app/templates/layout.templ` (title, description, OG/Twitter)
 - Update absolute URLs in `app/static/robots.txt` and `app/static/sitemap.xml`
 
+Structured data (JSON‑LD) is embedded in `app/templates/layout.templ`. Adjust
+the `url` and organization/site details for your production domain.
+
+## Environment
+
+Copy `.env.example` to `.env` and customize:
+
+```
+APP_ENV=development
+FIBER_HOST=127.0.0.1
+FIBER_PORT=8080
+CSRF_SECRET=change-me
+DATABASE_URL=postgres://user:pass@localhost:5432/gforge?sslmode=disable
+```
+
 ## Security
 
 - Run `govulncheck` periodically.
@@ -155,3 +171,31 @@ MIT — see `LICENSE`.
 - [Fiber](https://github.com/gofiber/fiber)
 - [Templ](https://github.com/a-h/templ)
 - [gotailwindcss](https://github.com/gotailwindcss/tailwind)
+
+## CI/CD & Releases
+
+GitHub Actions workflow at `.github/workflows/ci.yml` runs on Ubuntu, macOS,
+and Windows:
+
+- go vet
+- go test ./... -v
+- govulncheck ./...
+
+Tagged releases are built by `.github/workflows/release.yml` using GoReleaser
+with configuration in `.goreleaser.yaml`.
+
+To generate a release:
+
+```
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Artifacts for `gforge` and the `gothic-forge-server` will be published.
+
+## Deployment examples
+
+See `infra/` for examples:
+
+- `infra/caddy/Caddyfile` — Caddy reverse proxy + static files
+- `infra/fly/fly.toml` — Fly.io single-binary deployment example

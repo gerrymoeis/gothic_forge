@@ -2,6 +2,7 @@ package routes
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"gothicforge/app/db"
 	"gothicforge/app/templates"
 )
 
@@ -13,6 +14,25 @@ func Register(app *fiber.App) {
 	})
 
 	app.Get("/healthz", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{"ok": true})
+	})
+
+	// Database ping (non-fatal when not configured)
+	app.Get("/db/ping", func(c *fiber.Ctx) error {
+		ctx := c.UserContext()
+		p, err := db.Connect(ctx)
+		if err != nil {
+			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+				"ok":      false,
+				"message": err.Error(),
+			})
+		}
+		if p == nil {
+			return c.JSON(fiber.Map{
+				"ok":      false,
+				"message": "database not configured",
+			})
+		}
 		return c.JSON(fiber.Map{"ok": true})
 	})
 

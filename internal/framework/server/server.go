@@ -2,6 +2,8 @@ package server
 
 import (
 	"time"
+	"os"
+	"path/filepath"
 
 	"gothicforge/internal/framework/env"
 
@@ -66,8 +68,31 @@ func New() *fiber.App {
 		KeyGenerator:  func() string { return csrfSecret },
 	}))
 
-	// Serve static assets from /app/static at /static
-	app.Static("/static", "./app/static")
+	// Serve static assets from project root /app/static at /static
+	app.Static("/static", detectStaticDir())
 
 	return app
+}
+
+// detectStaticDir tries to locate the module root (folder containing go.mod)
+// and returns an absolute path to app/static. Falls back to relative path.
+func detectStaticDir() string {
+    wd, _ := os.Getwd()
+    cur := wd
+    for {
+        if _, err := os.Stat(filepath.Join(cur, "go.mod")); err == nil {
+            p := filepath.Join(cur, "app", "static")
+            if _, err := os.Stat(p); err == nil {
+                return p
+            }
+            break
+        }
+        parent := filepath.Dir(cur)
+        if parent == cur {
+            break
+        }
+        cur = parent
+    }
+    // Fallback (works when running from repo root)
+    return "./app/static"
 }

@@ -1,0 +1,26 @@
+# Example Fly.io config for Gothic Forge
+# flyctl apps create gothic-forge
+# flyctl launch --no-docker --now
+
+app = "gothic-forge"
+primary_region = "sin"
+kill_signal = "SIGINT"
+
+[build]
+  builder = "paketobuildpacks/builder-jammy-base"
+
+[env]
+  APP_ENV = "production"
+  FIBER_HOST = "0.0.0.0"
+  FIBER_PORT = "8080"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+[[vm]]
+  size = "shared-cpu-1x"
