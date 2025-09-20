@@ -1,0 +1,19 @@
+# Normalize line endings to LF in repo, avoid CRLF warnings
+* text=auto
+
+# Enforce LF for source and config files
+*.go     text eol=lf
+*.templ  text eol=lf
+*.md     text eol=lf
+*.yml    text eol=lf
+*.yaml   text eol=lf
+*.toml   text eol=lf
+*.json   text eol=lf
+*.css    text eol=lf
+*.html   text eol=lf
+*.svg    text eol=lf
+*.sh     text eol=lf
+
+# Go modules
+go.mod   text eol=lf
+go.sum   text eol=lf

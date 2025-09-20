@@ -2,10 +2,20 @@
 
 All batteries included. Minimal friction. Focus on building.
 
-Gothic Forge is a Go web starter that ships secure defaults, server-side
-rendering with [Templ](https://github.com/a-h/templ), a pure-Go Tailwind CSS
-pipeline via [`gotailwindcss`](https://github.com/gotailwindcss/tailwind), and a
-fast developer experience with hot reload.
+Gothic Forge is a Go web starter built with Go, [Fiber](https://github.com/gofiber/fiber),
+[Templ](https://github.com/a-h/templ), [HTMX](https://htmx.org/),
+[`gotailwindcss`](https://github.com/gotailwindcss/tailwind) (pure‑Go Tailwind),
+and [DaisyUI](https://daisyui.com/). It ships secure defaults, server‑side
+rendering, and a fast developer experience with hot reload.
+
+Main stack:
+
+- Go
+- Fiber
+- Templ
+- HTMX
+- gotailwindcss (pure‑Go Tailwind)
+- DaisyUI
 
 ## Features
 
