@@ -30,7 +30,15 @@ func New() *fiber.App {
 	// Core middlewares
 	app.Use(requestid.New())
 	app.Use(recover.New())
-	app.Use(logger.New())
+	// Logger: plain or JSON depending on LOG_FORMAT
+	if env.Get("LOG_FORMAT", "") == "json" {
+		app.Use(logger.New(logger.Config{
+			Format:     `{"time":"${time}","id":"${locals:requestid}","ip":"${ip}","method":"${method}","path":"${path}","status":${status},"latency":"${latency}","ua":"${ua}"}\n`,
+			TimeFormat: time.RFC3339,
+		}))
+	} else {
+		app.Use(logger.New())
+	}
 	app.Use(helmet.New())
 	app.Use(compress.New())
 	app.Use(cors.New())
@@ -62,6 +70,7 @@ func New() *fiber.App {
 	app.Use(csrf.New(csrf.Config{
 		KeyLookup:     "header:X-CSRF-Token",
 		CookieName:    "_gforge_csrf",
+		CookieHTTPOnly: false,
 		CookieSecure:  env.Get("APP_ENV", "development") == "production",
 		CookieSameSite: "Lax",
 		Expiration:    12 * time.Hour,

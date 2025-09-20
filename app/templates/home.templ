@@ -1,11 +1,9 @@
 package templates
 
-import (
-    "fmt"
-)
+import "fmt"
 
-// Index is the example page used for the home route. Matches the generated placeholder name.
-templ Index() {
+// Home replicates the original Index content and embeds the CounterWidget centered on the page.
+templ Home(count int) {
     @Layout("Gothic Forge — It just runs") {
         <div class="container mx-auto px-6 py-16">
             <div class="text-center">
@@ -13,9 +11,11 @@ templ Index() {
                 <p class="mt-4 text-base md:text-xl opacity-80">All batteries included. Minimal friction. Focus on building.</p>
                 <a href="/healthz" class="btn btn-primary mt-8">Health Check</a>
             </div>
+
             <section class="min-h-[30vh] grid place-items-center mt-10">
-                <div id="counter-mount" hx-get="/counter/widget" hx-trigger="load" hx-swap="outerHTML"></div>
+                @CounterWidget(count)
             </section>
+
             <div class="mt-16 grid gap-6 md:grid-cols-3">
                 <div class="card bg-base-200 p-6">
                     <h2 class="font-semibold text-lg">Secure defaults</h2>
@@ -36,4 +36,3 @@ templ Index() {
         </div>
     }
 }
-

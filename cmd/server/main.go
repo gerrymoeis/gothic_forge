@@ -14,6 +14,26 @@ import (
 func main() {
 	_ = env.Load()
 	app := server.New()
+
+	// Error handler middleware to render HTML for server errors (>=500).
+	// Must be registered BEFORE routes so it can catch downstream errors.
+	app.Use(func(c *fiber.Ctx) error {
+		if err := c.Next(); err != nil {
+			if fe, ok := err.(*fiber.Error); ok {
+				if fe.Code >= 500 {
+					c.Type("html", "utf-8")
+					c.Status(fe.Code)
+					return templates.ErrorPage(fe.Code, fe.Message).Render(c.UserContext(), c.Response().BodyWriter())
+				}
+				return err
+			}
+			c.Type("html", "utf-8")
+			c.Status(fiber.StatusInternalServerError)
+			return templates.ErrorPage(fiber.StatusInternalServerError, err.Error()).Render(c.UserContext(), c.Response().BodyWriter())
+		}
+		return nil
+	})
+
 	routes.Register(app)
 
 	// Catch-all fallback 404 route (placed last). No Next() call, ensures HTML 404.

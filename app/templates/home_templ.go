@@ -7,12 +7,10 @@ package templates
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import (
-	"fmt"
-)
+import "fmt"
 
-// Index is the example page used for the home route. Matches the generated placeholder name.
-func Index() templ.Component {
+// Home replicates the original Index content and embeds the CounterWidget centered on the page.
+func Home(count int) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -45,20 +43,28 @@ func Index() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"container mx-auto px-6 py-16\"><div class=\"text-center\"><h1 class=\"text-4xl md:text-6xl font-extrabold\">Gothic Forge</h1><p class=\"mt-4 text-base md:text-xl opacity-80\">All batteries included. Minimal friction. Focus on building.</p><a href=\"/healthz\" class=\"btn btn-primary mt-8\">Health Check</a></div><section class=\"min-h-[30vh] grid place-items-center mt-10\"><div id=\"counter-mount\" hx-get=\"/counter/widget\" hx-trigger=\"load\" hx-swap=\"outerHTML\"></div></section><div class=\"mt-16 grid gap-6 md:grid-cols-3\"><div class=\"card bg-base-200 p-6\"><h2 class=\"font-semibold text-lg\">Secure defaults</h2><p class=\"opacity-80 mt-2\">Helmet, CSRF, sessions, limiter, compression and CORS are prewired.</p></div><div class=\"card bg-base-200 p-6\"><h2 class=\"font-semibold text-lg\">Developer-first DX</h2><p class=\"opacity-80 mt-2\">Run <code>gforge dev</code> to get live SSR (Templ), hot reload (Air) and Tailwind watch.</p></div><div class=\"card bg-base-200 p-6\"><h2 class=\"font-semibold text-lg\">One sandbox</h2><p class=\"opacity-80 mt-2\">Code only in <code>/app/</code>. Everything else is prewired plumbing.</p></div></div><div class=\"mt-12 opacity-70 text-sm\"><p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"container mx-auto px-6 py-16\"><div class=\"text-center\"><h1 class=\"text-4xl md:text-6xl font-extrabold\">Gothic Forge</h1><p class=\"mt-4 text-base md:text-xl opacity-80\">All batteries included. Minimal friction. Focus on building.</p><a href=\"/healthz\" class=\"btn btn-primary mt-8\">Health Check</a></div><section class=\"min-h-[30vh] grid place-items-center mt-10\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = CounterWidget(count).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</section><div class=\"mt-16 grid gap-6 md:grid-cols-3\"><div class=\"card bg-base-200 p-6\"><h2 class=\"font-semibold text-lg\">Secure defaults</h2><p class=\"opacity-80 mt-2\">Helmet, CSRF, sessions, limiter, compression and CORS are prewired.</p></div><div class=\"card bg-base-200 p-6\"><h2 class=\"font-semibold text-lg\">Developer-first DX</h2><p class=\"opacity-80 mt-2\">Run <code>gforge dev</code> to get live SSR (Templ), hot reload (Air) and Tailwind watch.</p></div><div class=\"card bg-base-200 p-6\"><h2 class=\"font-semibold text-lg\">One sandbox</h2><p class=\"opacity-80 mt-2\">Code only in <code>/app/</code>. Everything else is prewired plumbing.</p></div></div><div class=\"mt-12 opacity-70 text-sm\"><p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%s %s", "Made with", "Templ + Fiber + HTMX"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `app/templates/index.templ`, Line: 34, Col: 78}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `app/templates/home.templ`, Line: 34, Col: 78}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</p></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</p></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
