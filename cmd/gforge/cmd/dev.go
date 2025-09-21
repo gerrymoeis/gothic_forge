@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"gothicforge/internal/framework/execx"
+	"gothicforge/internal/execx"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -44,9 +44,7 @@ var devCmd = &cobra.Command{
 				return
 			}
 
-			c, cancel := execx.TimeoutContext(0)
-			defer cancel()
-			_ = execx.Run(c, "templ", templPath, "generate", "-watch", "-include-version=false", "-include-timestamp=false")
+			_ = execx.Run(ctx, "templ", templPath, "generate", "-watch", "-include-version=false", "-include-timestamp=false")
 		}()
 
 		// Tailwind CSS via gotailwindcss (pure Go). Poll for changes to input CSS and rebuild.
@@ -61,9 +59,7 @@ var devCmd = &cobra.Command{
 			var lastMod time.Time
 			// Ensure initial build
 			func() {
-				c, cancel := execx.TimeoutContext(0)
-				defer cancel()
-				_ = execx.Run(c, "gotailwindcss build", gwPath, "build", "-o", output, input)
+				_ = execx.Run(ctx, "gotailwindcss build", gwPath, "build", "-o", output, input)
 			}()
 			for {
 				select {
@@ -74,9 +70,7 @@ var devCmd = &cobra.Command{
 				fi, err := os.Stat(input)
 				if err == nil {
 					if fi.ModTime().After(lastMod) {
-						c, cancel := execx.TimeoutContext(0)
-						_ = execx.Run(c, "gotailwindcss build", gwPath, "build", "-o", output, input)
-						cancel()
+						_ = execx.Run(ctx, "gotailwindcss build", gwPath, "build", "-o", output, input)
 						lastMod = fi.ModTime()
 					}
 				}
@@ -87,15 +81,11 @@ var devCmd = &cobra.Command{
 		// server (prefer Air; auto-install if missing)
 		go func() {
 			if airPath, err := ensureTool("air", "github.com/air-verse/air@latest"); err == nil {
-				c, cancel := execx.TimeoutContext(0)
-				defer cancel()
-				_ = execx.Run(c, "air", airPath, "-c", ".air.toml")
+				_ = execx.Run(ctx, "air", airPath, "-c", ".air.toml")
 				return
 			}
 			color.Yellow("air not available; running `go run ./cmd/server` (no auto-restart)")
-			c, cancel := execx.TimeoutContext(0)
-			defer cancel()
-			_ = execx.Run(c, "server", "go", "run", "./cmd/server")
+			_ = execx.Run(ctx, "server", "go", "run", "./cmd/server")
 		}()
 
 		// Block until canceled
@@ -108,49 +98,49 @@ var devCmd = &cobra.Command{
 // ensureTool ensures a CLI tool is available. If missing, it runs `go install <module>`
 // and returns the absolute path to the installed binary (from GOBIN or GOPATH/bin).
 func ensureTool(name, module string) (string, error) {
-    if p, ok := execx.Look(name); ok {
-        return p, nil
-    }
-    color.Yellow("%s not found. Installing %s...", name, module)
-    c, cancel := execx.TimeoutContext(0)
-    defer cancel()
-    if err := execx.Run(c, "go install", "go", "install", module); err != nil {
-        return "", fmt.Errorf("install failed for %s: %w", name, err)
-    }
-    if binDir := goBinDir(); binDir != "" {
-        bin := filepath.Join(binDir, exeName(name))
-        if _, err := os.Stat(bin); err == nil {
-            return bin, nil
-        }
-    }
-    if p, ok := execx.Look(name); ok {
-        return p, nil
-    }
-    return "", fmt.Errorf("%s installed but not found in PATH; ensure GOBIN/GOPATH/bin is on PATH", name)
+	if p, ok := execx.Look(name); ok {
+		return p, nil
+	}
+	color.Yellow("%s not found. Installing %s...", name, module)
+	c, cancel := execx.TimeoutContext(0)
+	defer cancel()
+	if err := execx.Run(c, "go install", "go", "install", module); err != nil {
+		return "", fmt.Errorf("install failed for %s: %w", name, err)
+	}
+	if binDir := goBinDir(); binDir != "" {
+		bin := filepath.Join(binDir, exeName(name))
+		if _, err := os.Stat(bin); err == nil {
+			return bin, nil
+		}
+	}
+	if p, ok := execx.Look(name); ok {
+		return p, nil
+	}
+	return "", fmt.Errorf("%s installed but not found in PATH; ensure GOBIN/GOPATH/bin is on PATH", name)
 }
 
 func exeName(name string) string {
-    if runtime.GOOS == "windows" {
-        return name + ".exe"
-    }
-    return name
+	if runtime.GOOS == "windows" {
+		return name + ".exe"
+	}
+	return name
 }
 
 func goEnv(key string) string {
-    out, err := exec.Command("go", "env", key).Output()
-    if err != nil {
-        return ""
-    }
-    return strings.TrimSpace(string(out))
+	out, err := exec.Command("go", "env", key).Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
 }
 
 func goBinDir() string {
-    if bin := goEnv("GOBIN"); bin != "" {
-        return bin
-    }
-    gopath := goEnv("GOPATH")
-    if gopath == "" {
-        return ""
-    }
-    return filepath.Join(gopath, "bin")
+	if bin := goEnv("GOBIN"); bin != "" {
+		return bin
+	}
+	gopath := goEnv("GOPATH")
+	if gopath == "" {
+		return ""
+	}
+	return filepath.Join(gopath, "bin")
 }

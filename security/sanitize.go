@@ -8,7 +8,7 @@ import (
 // in limited contexts. Adjust policy as needed per app.
 func Sanitizer() *bluemonday.Policy {
 	p := bluemonday.UGCPolicy()
-	// Example: allow 
+	// Example: allow
 	// p.AllowAttrs("class").OnElements("span", "div")
 	return p
 }

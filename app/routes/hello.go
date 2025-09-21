@@ -64,11 +64,11 @@ func Register(app *fiber.App) {
 		return c.Redirect("/static/favicon.svg", fiber.StatusMovedPermanently)
 	})
 
-	// Serve robots.txt and sitemap.xml from /static
+	// Serve robots.txt and sitemap.xml via redirect to /static (consistent with favicon)
 	app.Get("/robots.txt", func(c *fiber.Ctx) error {
-		return c.SendFile("./app/static/robots.txt", true)
+		return c.Redirect("/static/robots.txt", fiber.StatusMovedPermanently)
 	})
 	app.Get("/sitemap.xml", func(c *fiber.Ctx) error {
-		return c.SendFile("./app/static/sitemap.xml", true)
+		return c.Redirect("/static/sitemap.xml", fiber.StatusMovedPermanently)
 	})
 }

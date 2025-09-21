@@ -7,8 +7,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"gothicforge/app/routes"
 	"gothicforge/app/templates"
-	"gothicforge/internal/framework/env"
-	"gothicforge/internal/framework/server"
+	"gothicforge/internal/env"
+	"gothicforge/internal/server"
 )
 
 func main() {

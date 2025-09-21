@@ -3,7 +3,7 @@ package cmd
 import (
 	"runtime"
 
-	"gothicforge/internal/framework/execx"
+	"gothicforge/internal/execx"
 
 	"github.com/spf13/cobra"
 )

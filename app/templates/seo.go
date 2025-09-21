@@ -7,5 +7,5 @@ type SEO struct {
 	Keywords    []string
 	Canonical   string
 	// JSONLD allows injecting a raw JSON-LD script if needed.
-	JSONLD      string
+	JSONLD string
 }

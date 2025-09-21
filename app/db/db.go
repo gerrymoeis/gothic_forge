@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"gothicforge/internal/framework/env"
+	"gothicforge/internal/env"
 )
 
 var pool *pgxpool.Pool

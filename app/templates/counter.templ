@@ -4,6 +4,7 @@ import "strconv"
 // CounterPartial renders just the counter portion; used by HTMX swap.
 templ CounterPartial(count int) {
     <div id="counter" class="text-3xl font-bold" data-count={ strconv.Itoa(count) }>
+        <input type="hidden" name="count" value={ strconv.Itoa(count) } />
         { count }
     </div>
 }
@@ -17,7 +18,7 @@ templ CounterWidget(count int) {
             hx-post="/counter/increment"
             hx-target="#counter"
             hx-swap="outerHTML"
-            hx-vals='js:{count: document.getElementById("counter")?.dataset.count || 0}'
+            hx-include="#counter input[name=count]"
         >
             +1
         </button>
@@ -40,3 +41,4 @@ templ CounterPage(count int) {
         </section>
     }
 }
+

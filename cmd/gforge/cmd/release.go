@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"gothicforge/internal/framework/execx"
+	"gothicforge/internal/execx"
 )
 
 var releaseCmd = &cobra.Command{

@@ -6,7 +6,12 @@ import (
 
 // Index is the example page used for the home route. Matches the generated placeholder name.
 templ Index() {
-    @Layout("Gothic Forge — It just runs") {
+    @LayoutSEO(SEO{
+        Title:       "Gothic Forge — It just runs",
+        Description: "All batteries included. Minimal friction. Focus on building.",
+        Keywords:    []string{"Kompetisi pemrograman Indonesia", "Pelatihan coding mahasiswa", "Innovation Lab", "Gemastik", "Olivia competition", "UI/UX design learning", "Web development training", "C++ programming education"},
+        Canonical:   "/",
+    }) {
         <div class="container mx-auto px-6 py-16">
             <div class="text-center">
                 <h1 class="text-4xl md:text-6xl font-extrabold">Gothic Forge</h1>

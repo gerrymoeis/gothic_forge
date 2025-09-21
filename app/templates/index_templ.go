@@ -52,7 +52,7 @@ func Index() templ.Component {
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%s %s", "Made with", "Templ + Fiber + HTMX"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `app/templates/index.templ`, Line: 34, Col: 78}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `app/templates/index.templ`, Line: 39, Col: 78}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -64,7 +64,12 @@ func Index() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Layout("Gothic Forge — It just runs").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = LayoutSEO(SEO{
+			Title:       "Gothic Forge — It just runs",
+			Description: "All batteries included. Minimal friction. Focus on building.",
+			Keywords:    []string{"Kompetisi pemrograman Indonesia", "Pelatihan coding mahasiswa", "Innovation Lab", "Gemastik", "Olivia competition", "UI/UX design learning", "Web development training", "C++ programming education"},
+			Canonical:   "/",
+		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

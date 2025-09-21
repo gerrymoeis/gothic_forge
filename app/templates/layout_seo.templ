@@ -1,7 +1,7 @@
-package templates
+﻿package templates
 import (
     "strings"
-    "gothicforge/internal/framework/env"
+    "gothicforge/internal/env"
 )
 
 // LayoutSEO is like Layout but accepts a full SEO struct for per-page meta.
@@ -42,24 +42,12 @@ templ LayoutSEO(meta SEO) {
             <link rel="preconnect" href="https://cdn.jsdelivr.net"/>
             <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.css"/>
             <script src="https://unpkg.com/htmx.org@2.0.3" integrity="sha384-0895/pl2MU10Hqc6jd4RvrthNlDiE9U1tWmX7WRESftEDRosgxNsQG/Ze9YMRzHq" crossorigin="anonymous"></script>
-            <script>
-            // Inject CSRF token into HTMX requests using header X-CSRF-Token
-            (function(){
-              function getCookie(name){
-                const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
-                return v ? v.pop() : '';
-              }
-              document.addEventListener('htmx:configRequest', function(evt){
-                var token = getCookie('_gforge_csrf');
-                if (token) {
-                  evt.detail.headers['X-CSRF-Token'] = token;
-                }
-              });
-            })();
-            </script>
+            <script src="/static/app.js" defer></script>
         </head>
         <body class="min-h-screen bg-base-100 text-base-content">
             { children... }
         </body>
     </html>
 }
+
+

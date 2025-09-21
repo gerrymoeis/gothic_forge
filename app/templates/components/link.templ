@@ -1,0 +1,8 @@
+package templates
+
+// Link is a small anchor component with optional prefetch-on-hover behavior.
+// If prefetch is true, we add data-prefetch="1" which is picked up by app/static/app.js
+// to issue a lightweight HEAD request on hover.
+templ Link(href string, text string, prefetch bool, class string) {
+    <a href={ href } class={ class } data-prefetch={ ternary(prefetch, "1", "") }>{ text }</a>
+}

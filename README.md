@@ -120,6 +120,9 @@ go build -o build/server.exe ./cmd/server
 Run with environment variables (optional):
 
 ```powershell
+$env:BASE_URL = "https://example.com"
+$env:LOG_FORMAT = "json"
+$env:CORS_ORIGINS = "https://example.com,https://admin.example.com"
 $env:FIBER_HOST = "0.0.0.0"
 $env:FIBER_PORT = "8080"
 ./build/server.exe
@@ -133,11 +136,10 @@ gotailwindcss build -o app/static/styles.css app/static/tailwind.input.css
 
 Update SEO assets for production:
 
-- Edit meta tags in `app/templates/layout.templ` (title, description, OG/Twitter)
+- Edit meta tags in `app/templates/layout.templ` and `app/templates/layout_seo.templ` (title, description, OG/Twitter)
 - Update absolute URLs in `app/static/robots.txt` and `app/static/sitemap.xml`
 
-Structured data (JSON‑LD) is embedded in `app/templates/layout.templ`. Adjust
-the `url` and organization/site details for your production domain.
+By default, Gothic Forge does not inject JSON‑LD or inline scripts to keep security tight and output minimal. If you need structured data, add a small component explicitly where required.
 
 ## Environment
 
@@ -151,8 +153,18 @@ CSRF_SECRET=change-me
 DATABASE_URL=postgres://user:pass@localhost:5432/gforge?sslmode=disable
 ```
 
+### Configuration
+
+Additional environment variables:
+
+- `BASE_URL` — Used by `LayoutSEO` to resolve canonical links and og:url. Example: `https://example.com`.
+- `LOG_FORMAT` — Set to `json` for JSON logs, otherwise plain text.
+- `CORS_ORIGINS` — Comma‑separated list of allowed origins in production (e.g., `https://example.com,https://admin.example.com`). If empty, defaults to permissive (good for dev).
+
 ## Security
 
+- Strict Content Security Policy (CSP) with no inline scripts by default.
+- CSRF protection via header `X-CSRF-Token` and a cookie `_gforge_csrf`. A tiny external script `/static/app.js` sets the header for HTMX requests.
 - Run `govulncheck` periodically.
 - Follow standard Go security best practices and keep dependencies updated.
 - See `SECURITY.md` for disclosure policy.
@@ -171,6 +183,16 @@ MIT — see `LICENSE`.
 - [Fiber](https://github.com/gofiber/fiber)
 - [Templ](https://github.com/a-h/templ)
 - [gotailwindcss](https://github.com/gotailwindcss/tailwind)
+
+## Static Export (SSG)
+
+Gothic Forge can export simple static pages for hosting on any static platform:
+
+```powershell
+go run ./cmd/gforge export -o dist
+```
+
+This renders selected routes (e.g., `/` and `/counter`) to HTML and copies `app/static/` into `dist/static/`.
 
 ## CI/CD & Releases
 

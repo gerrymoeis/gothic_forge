@@ -63,10 +63,10 @@ func Shell() (string, string) {
 
 // TimeoutContext is a helper to build a context with timeout.
 func TimeoutContext(d time.Duration) (context.Context, context.CancelFunc) {
-    if d <= 0 {
-        return context.WithCancel(context.Background())
-    }
-    return context.WithTimeout(context.Background(), d)
+	if d <= 0 {
+		return context.WithCancel(context.Background())
+	}
+	return context.WithTimeout(context.Background(), d)
 }
 
 // JoinCommand builds a shell command string.

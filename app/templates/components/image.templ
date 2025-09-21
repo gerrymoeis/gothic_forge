@@ -1,0 +1,26 @@
+package templates
+
+import "strconv"
+
+// ImageOptimized is a simple image component inspired by Next/Image.
+// It sets width/height to avoid layout shift, lazy loads by default,
+// uses decoding="async", and allows fetchpriority for above-the-fold images.
+templ ImageOptimized(src string, alt string, width int, height int, sizes string, priority bool, class string) {
+    <img
+        src={ src }
+        alt={ alt }
+        width={ strconv.Itoa(width) }
+        height={ strconv.Itoa(height) }
+        loading={ ternary(priority, "eager", "lazy") }
+        fetchpriority={ ternary(priority, "high", "auto") }
+        decoding="async"
+        sizes={ sizes }
+        class={ class }
+    />
+}
+
+// ternary helper for templ
+func ternary[T any](cond bool, a, b T) T {
+    if cond { return a }
+    return b
+}

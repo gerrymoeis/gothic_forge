@@ -1,3 +1,8 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Gothic Forge custom CSS overrides
+   DaisyUI (via CDN) already provides Tailwind utilities and components.
+   Use this file for small project-specific tweaks and variables. */
+
+/* Example: adjust default body text rendering */
+html { -webkit-text-size-adjust: 100%; }
+body { text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+
