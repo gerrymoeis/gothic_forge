@@ -50,7 +50,7 @@ func TestCounterPage_GET(t *testing.T) {
 	}
 	body, _ := io.ReadAll(resp.Body)
 	s := string(body)
-	if !strings.Contains(s, "HTMX Counter") || !strings.Contains(s, "id=\"counter\"") {
+	if !strings.Contains(s, "HTMX Counter") || !strings.Contains(s, "id=\"count-value\"") {
 		t.Fatalf("expected counter page content, got: %s", s)
 	}
 }
@@ -88,8 +88,8 @@ func TestCounterIncrement_POST_Once(t *testing.T) {
 	}
 	body, _ := io.ReadAll(resp.Body)
 	s := string(body)
-	if !strings.Contains(s, "id=\"counter\"") {
-		t.Fatalf("expected counter partial, got: %s", s)
+	if !strings.Contains(s, "id=\"count-value\"") {
+		t.Fatalf("expected counter value response, got: %s", s)
 	}
 }
 
@@ -147,7 +147,7 @@ func TestCounterIncrement_POST_TwiceWithSession(t *testing.T) {
 	}
 	body2, _ := io.ReadAll(resp2.Body)
 	s2 := string(body2)
-	if !strings.Contains(s2, `id="counter"`) {
-		t.Fatalf("expected counter partial, got: %s", s2)
+	if !strings.Contains(s2, `id="count-value"`) {
+		t.Fatalf("expected counter value response, got: %s", s2)
 	}
 }

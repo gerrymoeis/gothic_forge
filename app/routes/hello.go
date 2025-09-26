@@ -2,6 +2,7 @@ package routes
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/session"
 	"gothicforge/app/db"
 	"gothicforge/app/templates"
 	"strconv"
@@ -10,6 +11,11 @@ import (
 // Register mounts all application routes.
 func Register(app *fiber.App) {
 	app.Get("/", func(c *fiber.Ctx) error {
+		// Reset counter on each visit to the homepage for a predictable demo
+		if s, ok := c.Locals("session").(*session.Session); ok && s != nil {
+			s.Set("count", 0)
+			_ = s.Save()
+		}
 		c.Type("html")
 		return templates.Index().Render(c.UserContext(), c.Response().BodyWriter())
 	})
@@ -18,25 +24,59 @@ func Register(app *fiber.App) {
 		return c.JSON(fiber.Map{"ok": true})
 	})
 
-	// HTMX Counter demo
+	// HTMX Counter demo (session-backed)
 	app.Get("/counter/widget", func(c *fiber.Ctx) error {
 		c.Type("html")
-		// Reset to zero on initial load; no session persistence for widget
-		return templates.CounterWidget(0).Render(c.UserContext(), c.Response().BodyWriter())
+		var count int
+		if s, ok := c.Locals("session").(*session.Session); ok && s != nil {
+			if v := s.Get("count"); v != nil {
+				switch t := v.(type) {
+				case int:
+					count = t
+				case int64:
+					count = int(t)
+				case string:
+					if n, err := strconv.Atoi(t); err == nil { count = n }
+				}
+			} else {
+				s.Set("count", 0)
+				_ = s.Save()
+			}
+		}
+		return templates.CounterWidget(count).Render(c.UserContext(), c.Response().BodyWriter())
 	})
 	app.Get("/counter", func(c *fiber.Ctx) error {
 		c.Type("html")
-		// Full page demo resets to zero on refresh
-		return templates.CounterPage(0).Render(c.UserContext(), c.Response().BodyWriter())
+		// Always reset to 0 for a predictable demo; do not read back to avoid edge cases
+		if s, ok := c.Locals("session").(*session.Session); ok && s != nil {
+			s.Set("count", 0)
+			_ = s.Save()
+		}
+		count := 0
+		return templates.CounterPage(count).Render(c.UserContext(), c.Response().BodyWriter())
 	})
 	app.Post("/counter/increment", func(c *fiber.Ctx) error {
-		// CSRF middleware expects X-CSRF-Token header; set in layout via HTMX hook.
-		// Stateless increment: read current count from request (hx-vals) and add 1.
-		countStr := c.FormValue("count")
-		count, _ := strconv.Atoi(countStr)
-		count++
-		c.Type("html")
-		return templates.CounterPartial(count).Render(c.UserContext(), c.Response().BodyWriter())
+		// CSRF middleware expects X-CSRF-Token header; set by /static/app.js
+		var count int
+		if s, ok := c.Locals("session").(*session.Session); ok && s != nil {
+			if v := s.Get("count"); v != nil {
+				switch t := v.(type) {
+				case int:
+					count = t
+				case int64:
+					count = int(t)
+				case string:
+					if n, err := strconv.Atoi(t); err == nil { count = n }
+				}
+			}
+			count++
+			s.Set("count", count)
+			_ = s.Save()
+		} else {
+			count = 1
+		}
+		// Respond with plain digits; htmx will swap into #count-value via innerHTML
+		return c.SendString(strconv.Itoa(count))
 	})
 
 	// Database ping (non-fatal when not configured)

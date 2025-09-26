@@ -14,6 +14,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 
+	"gothicforge/app/ssg"
 	"gothicforge/app/templates"
 )
 
@@ -33,25 +34,8 @@ var exportCmd = &cobra.Command{
 			return fmt.Errorf("create out dir: %w", err)
 		}
 
-		// 1) Export pages
-		pages := []struct {
-			Path   string
-			Render func(context.Context) (string, error)
-		}{
-			{
-				Path: "/",
-				Render: func(ctx context.Context) (string, error) {
-					return renderToString(ctx, templates.Index())
-				},
-			},
-			{
-				Path: "/counter",
-				Render: func(ctx context.Context) (string, error) {
-					return renderToString(ctx, templates.CounterPage(0))
-				},
-			},
-		}
-
+		// 1) Export registered SSG pages
+		pages := ssg.Pages()
 		for _, p := range pages {
 			html, err := p.Render(context.Background())
 			if err != nil {
@@ -72,6 +56,16 @@ var exportCmd = &cobra.Command{
 			return fmt.Errorf("copy static: %w", err)
 		}
 		color.Green("✔ static -> %s", filepath.Join(outDir, "static"))
+
+		// 3) Export a root-level 404.html for static hosts
+		notFoundHTML, err := renderToString(context.Background(), templates.NotFound())
+		if err != nil {
+			return fmt.Errorf("render 404: %w", err)
+		}
+		if err := os.WriteFile(filepath.Join(outDir, "404.html"), []byte(notFoundHTML), 0o644); err != nil {
+			return fmt.Errorf("write 404.html: %w", err)
+		}
+		color.Green("✔ 404 -> %s", filepath.Join(outDir, "404.html"))
 
 		color.HiGreen("Done.")
 		return nil

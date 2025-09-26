@@ -7,10 +7,6 @@ package templates
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import (
-	"fmt"
-)
-
 // Index is the example page used for the home route. Matches the generated placeholder name.
 func Index() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
@@ -45,20 +41,7 @@ func Index() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"container mx-auto px-6 py-16\"><div class=\"text-center\"><h1 class=\"text-4xl md:text-6xl font-extrabold\">Gothic Forge</h1><p class=\"mt-4 text-base md:text-xl opacity-80\">All batteries included. Minimal friction. Focus on building.</p><a href=\"/healthz\" class=\"btn btn-primary mt-8\">Health Check</a></div><section class=\"min-h-[30vh] grid place-items-center mt-10\"><div id=\"counter-mount\" hx-get=\"/counter/widget\" hx-trigger=\"load\" hx-swap=\"outerHTML\"></div></section><div class=\"mt-16 grid gap-6 md:grid-cols-3\"><div class=\"card bg-base-200 p-6\"><h2 class=\"font-semibold text-lg\">Secure defaults</h2><p class=\"opacity-80 mt-2\">Helmet, CSRF, sessions, limiter, compression and CORS are prewired.</p></div><div class=\"card bg-base-200 p-6\"><h2 class=\"font-semibold text-lg\">Developer-first DX</h2><p class=\"opacity-80 mt-2\">Run <code>gforge dev</code> to get live SSR (Templ), hot reload (Air) and Tailwind watch.</p></div><div class=\"card bg-base-200 p-6\"><h2 class=\"font-semibold text-lg\">One sandbox</h2><p class=\"opacity-80 mt-2\">Code only in <code>/app/</code>. Everything else is prewired plumbing.</p></div></div><div class=\"mt-12 opacity-70 text-sm\"><p>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var3 string
-			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%s %s", "Made with", "Templ + Fiber + HTMX"))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `app/templates/index.templ`, Line: 39, Col: 78}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</p></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"mx-auto max-w-7xl px-4 md:px-6\"><div class=\"navbar bg-base-100/60 backdrop-blur rounded-box mt-4\"><div class=\"navbar-start\"><a href=\"/\" class=\"btn btn-ghost text-xl\">Gothic Forge</a></div><div class=\"navbar-center hidden md:flex\"><ul class=\"menu menu-horizontal px-1\"><li><a href=\"/counter\">Counter</a></li><li><a href=\"/healthz\">Health</a></li></ul></div><div class=\"navbar-end\"></div></div><section class=\"min-h-screen pt-20 pb-12 md:pt-28 md:pb-16 grid place-items-center\"><div class=\"w-full max-w-4xl text-center\"><h1 class=\"text-6xl md:text-7xl font-extrabold tracking-tight leading-tight text-primary\">Gothic Forge</h1><p class=\"mt-5 text-lg md:text-2xl text-base-content/70 leading-relaxed\">Batteries-included Go starter. Secure by default. Zero-JS interactivity with HTMX.</p><div class=\"mt-8 flex flex-wrap items-center justify-center gap-3\"><a href=\"/counter\" class=\"btn btn-primary\">Counter Demo</a> <a href=\"/healthz\" class=\"btn btn-ghost\">Health Check</a></div><div class=\"mt-10\"><div class=\"card bg-base-200 border border-base-300 rounded-box shadow-xl max-w-md mx-auto\"><div class=\"card-body items-center text-center\"><h3 class=\"card-title\">Live Counter</h3><div class=\"mt-4 w-full max-w-xs mx-auto\"><div id=\"counter-mount\" hx-get=\"/counter/widget\" hx-trigger=\"load\" hx-swap=\"outerHTML\"></div></div></div></div></div></div></section><section class=\"my-12 md:my-16\"><div class=\"mx-auto max-w-5xl border-t border-base-300/70\"></div></section><section class=\"my-12\"><div class=\"mx-auto max-w-5xl grid gap-6 md:grid-cols-3\"><div class=\"card bg-base-100 border border-base-300 shadow-md transition hover:-translate-y-0.5\"><div class=\"card-body items-center text-center\"><h2 class=\"card-title\">Secure defaults</h2><p class=\"opacity-80\">Helmet, CSP, CSRF, sessions, limiter, compression and CORS are prewired.</p></div></div><div class=\"card bg-base-100 border border-base-300 shadow-md transition hover:-translate-y-0.5\"><div class=\"card-body items-center text-center\"><h2 class=\"card-title\">Developer-first DX</h2><p class=\"opacity-80\">Run gforge dev for live SSR (Templ), hot reload (Air) and CDN DaisyUI.</p></div></div><div class=\"card bg-base-100 border border-base-300 shadow-md transition hover:-translate-y-0.5\"><div class=\"card-body items-center text-center\"><h2 class=\"card-title\">One sandbox</h2><p class=\"opacity-80\">Code only in /app/. Everything else is prewired plumbing.</p></div></div></div></section><footer class=\"mt-8 mb-12 opacity-70 text-sm text-center\"><p>Made with Templ + Fiber + HTMX</p></footer></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -67,7 +50,7 @@ func Index() templ.Component {
 		templ_7745c5c3_Err = LayoutSEO(SEO{
 			Title:       "Gothic Forge — It just runs",
 			Description: "All batteries included. Minimal friction. Focus on building.",
-			Keywords:    []string{"Kompetisi pemrograman Indonesia", "Pelatihan coding mahasiswa", "Innovation Lab", "Gemastik", "Olivia competition", "UI/UX design learning", "Web development training", "C++ programming education"},
+			Keywords:    nil,
 			Canonical:   "/",
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {

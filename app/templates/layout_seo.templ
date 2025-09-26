@@ -1,7 +1,6 @@
-﻿package templates
+package templates
 import (
     "strings"
-    "gothicforge/internal/env"
 )
 
 // LayoutSEO is like Layout but accepts a full SEO struct for per-page meta.
@@ -23,25 +22,17 @@ templ LayoutSEO(meta SEO) {
                 <meta property="og:description" content={ meta.Description }/>
             }
             <meta property="og:type" content="website"/>
-            {
-                // Resolve canonical URL. If relative, prefix BASE_URL from env.
-                base := env.Get("BASE_URL", "http://127.0.0.1:8080")
-                canon := meta.Canonical
-                if canon != "" && strings.HasPrefix(canon, "/") {
-                    canon = base + canon
-                }
-                if canon != "" {
-                    <link rel="canonical" href={ canon }/>
-                    <meta property="og:url" content={ canon }/>
-                }
+            if meta.Canonical != "" {
+                <link rel="canonical" href={ meta.Canonical }/>
+                <meta property="og:url" content={ meta.Canonical }/>
             }
             <meta name="twitter:card" content="summary"/>
             <meta name="theme-color" content="#0b0b12"/>
             <link rel="icon" href="/static/favicon.svg" type="image/svg+xml"/>
-            <link rel="stylesheet" href="/static/styles.css"/>
+            <link rel="stylesheet" href="/static/styles.css?v=dev"/>
             <link rel="preconnect" href="https://cdn.jsdelivr.net"/>
-            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.css"/>
-            <script src="https://unpkg.com/htmx.org@2.0.3" integrity="sha384-0895/pl2MU10Hqc6jd4RvrthNlDiE9U1tWmX7WRESftEDRosgxNsQG/Ze9YMRzHq" crossorigin="anonymous"></script>
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"/>
+            <script src="https://unpkg.com/htmx.org@2.0.3" crossorigin="anonymous"></script>
             <script src="/static/app.js" defer></script>
         </head>
         <body class="min-h-screen bg-base-100 text-base-content">

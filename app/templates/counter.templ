@@ -1,27 +1,16 @@
 package templates
 import "strconv"
 
-// CounterPartial renders just the counter portion; used by HTMX swap.
-templ CounterPartial(count int) {
-    <div id="counter" class="text-3xl font-bold" data-count={ strconv.Itoa(count) }>
-        <input type="hidden" name="count" value={ strconv.Itoa(count) } />
-        { count }
-    </div>
+// CounterValue renders only the numeric value.
+templ CounterValue(count int) {
+    <div id="count-value" role="status" aria-live="polite" class="text-6xl md:text-7xl font-extrabold tracking-tight">{ strconv.Itoa(count) }</div>
 }
 
 // CounterWidget renders the counter with the +1 button, suitable for embedding.
 templ CounterWidget(count int) {
-    <div id="counter-panel" class="flex items-center justify-center gap-4">
-        @CounterPartial(count)
-        <button
-            class="btn btn-primary"
-            hx-post="/counter/increment"
-            hx-target="#counter"
-            hx-swap="outerHTML"
-            hx-include="#counter input[name=count]"
-        >
-            +1
-        </button>
+    <div id="counter-panel" class="mt-6 grid place-items-center gap-4">
+        @CounterValue(count)
+        <button class="btn btn-primary" aria-label="Increment counter" hx-post="/counter/increment" hx-target="#count-value" hx-swap="innerHTML">+1</button>
     </div>
 }
 
@@ -33,12 +22,13 @@ templ CounterPage(count int) {
         Keywords:    []string{"htmx", "templ", "fiber", "counter"},
         Canonical:   "/counter",
     }) {
-        <section class="min-h-[70vh] grid place-items-center">
-            <div class="text-center">
-                <h1 class="text-4xl md:text-5xl font-extrabold mb-6">HTMX Counter</h1>
+        <section class="min-h-screen grid place-items-center py-16">
+            <div class="text-center space-y-6">
+                <h1 class="text-4xl md:text-5xl font-extrabold">HTMX Counter</h1>
                 @CounterWidget(count)
             </div>
         </section>
     }
 }
+
 

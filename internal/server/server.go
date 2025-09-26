@@ -41,6 +41,20 @@ func New() *fiber.App {
 		app.Use(logger.New())
 	}
 	app.Use(helmet.New())
+	// Some Helmet defaults can interfere with cross-origin resources (e.g., COEP/COOP).
+	// Remove them to allow CDN CSS/JS while we rely on strict CSP for safety.
+	app.Use(func(c *fiber.Ctx) error {
+		if err := c.Next(); err != nil {
+			return err
+		}
+		// Operate directly on the response header to avoid copylocks and ensure deletions apply.
+		c.Response().Header.Del("Cross-Origin-Embedder-Policy")
+		c.Response().Header.Del("Cross-Origin-Opener-Policy")
+		// Cross-Origin-Resource-Policy applies to resources we serve; not needed for our pages.
+		// Leaving it unset avoids blocking external CDN resources unintentionally.
+		c.Response().Header.Del("Cross-Origin-Resource-Policy")
+		return nil
+	})
 	app.Use(compress.New())
 	// CORS: allow configurable origins via CORS_ORIGINS (comma-separated). Defaults to permissive.
 	if origins := env.Get("CORS_ORIGINS", ""); origins != "" {
@@ -93,17 +107,38 @@ func New() *fiber.App {
 
 	// Content Security Policy (CSP)
 	app.Use(func(c *fiber.Ctx) error {
-		c.Set("Content-Security-Policy", strings.Join([]string{
-			"default-src 'self'",
-			"script-src 'self' https://unpkg.com",
-			"style-src 'self' https://cdn.jsdelivr.net",
-			"img-src 'self' data: https:",
-			"font-src 'self' https://cdn.jsdelivr.net",
-			"connect-src 'self'",
-			"object-src 'none'",
-			"base-uri 'self'",
-			"frame-ancestors 'self'",
-		}, "; "))
+		// Remove any existing CSP header (e.g., from Helmet defaults) to avoid multiple CSP headers
+		// which browsers treat cumulatively (intersection), potentially blocking CDN resources.
+		c.Response().Header.Del("Content-Security-Policy")
+		// In development, allow any https for script/style to avoid friction with CDNs.
+		// In production, keep a strict allowlist.
+		var csp []string
+		if env.Get("APP_ENV", "development") == "development" {
+			csp = []string{
+				"default-src 'self'",
+				"script-src 'self' https:",
+				"style-src 'self' https: 'unsafe-inline'",
+				"img-src 'self' data: https:",
+				"font-src 'self' https:",
+				"connect-src 'self' https:",
+				"object-src 'none'",
+				"base-uri 'self'",
+				"frame-ancestors 'self'",
+			}
+		} else {
+			csp = []string{
+				"default-src 'self'",
+				"script-src 'self' https://unpkg.com",
+				"style-src 'self' https://cdn.jsdelivr.net",
+				"img-src 'self' data: https:",
+				"font-src 'self' https://cdn.jsdelivr.net",
+				"connect-src 'self'",
+				"object-src 'none'",
+				"base-uri 'self'",
+				"frame-ancestors 'self'",
+			}
+		}
+		c.Set("Content-Security-Policy", strings.Join(csp, "; "))
 		return c.Next()
 	})
 
