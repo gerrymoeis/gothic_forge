@@ -3,6 +3,10 @@
    Use this file for small project-specific tweaks and variables. */
 
 /* Example: adjust default body text rendering */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 html { -webkit-text-size-adjust: 100%; }
 body { text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
 

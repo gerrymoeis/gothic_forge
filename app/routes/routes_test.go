@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"io"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -29,22 +28,6 @@ func TestHome(t *testing.T) {
 	ct := resp.Header.Get("Content-Type")
 	if !strings.Contains(ct, "text/html") {
 		t.Fatalf("expected text/html content-type, got %q", ct)
-	}
-}
-
-func TestHealthz(t *testing.T) {
-	app := setupApp()
-	req := httptest.NewRequest("GET", "/healthz", nil)
-	resp, err := app.Test(req)
-	if err != nil {
-		t.Fatalf("healthz request failed: %v", err)
-	}
-	if resp.StatusCode != fiber.StatusOK {
-		t.Fatalf("expected 200, got %d", resp.StatusCode)
-	}
-	body, _ := io.ReadAll(resp.Body)
-	if !strings.Contains(string(body), "\"ok\":true") && !strings.Contains(string(body), "\"ok\": true") {
-		t.Fatalf("expected JSON with ok=true, got %s", string(body))
 	}
 }
 

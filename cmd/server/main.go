@@ -1,14 +1,13 @@
 package main
 
 import (
-	"fmt"
-	"log"
+    "fmt"
+    "log"
 
-	"github.com/gofiber/fiber/v2"
-	"gothicforge/app/routes"
-	"gothicforge/app/templates"
-	"gothicforge/internal/env"
-	"gothicforge/internal/server"
+    "github.com/gofiber/fiber/v2"
+    "gothicforge/app/routes"
+    "gothicforge/internal/env"
+    "gothicforge/internal/server"
 )
 
 func main() {
@@ -23,13 +22,15 @@ func main() {
 				if fe.Code >= 500 {
 					c.Type("html", "utf-8")
 					c.Status(fe.Code)
-					return templates.ErrorPage(fe.Code, fe.Message).Render(c.UserContext(), c.Response().BodyWriter())
+					html := fmt.Sprintf("<!doctype html><html><head><meta charset=\"utf-8\"><title>%d</title></head><body><h1>%d</h1><p>%s</p></body></html>", fe.Code, fe.Code, fe.Message)
+					return c.SendString(html)
 				}
 				return err
 			}
 			c.Type("html", "utf-8")
 			c.Status(fiber.StatusInternalServerError)
-			return templates.ErrorPage(fiber.StatusInternalServerError, err.Error()).Render(c.UserContext(), c.Response().BodyWriter())
+			html := fmt.Sprintf("<!doctype html><html><head><meta charset=\"utf-8\"><title>%d</title></head><body><h1>%d</h1><p>%s</p></body></html>", fiber.StatusInternalServerError, fiber.StatusInternalServerError, err.Error())
+			return c.SendString(html)
 		}
 		return nil
 	})
@@ -40,7 +41,8 @@ func main() {
 	app.All("/*", func(c *fiber.Ctx) error {
 		c.Type("html", "utf-8")
 		c.Status(fiber.StatusNotFound)
-		return templates.NotFound().Render(c.UserContext(), c.Response().BodyWriter())
+		html := "<!doctype html><html><head><meta charset=\"utf-8\"><title>404</title></head><body><h1>404</h1><p>Not Found</p></body></html>"
+		return c.SendString(html)
 	})
 
 	host := env.Get("FIBER_HOST", "127.0.0.1")

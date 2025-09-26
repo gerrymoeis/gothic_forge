@@ -28,6 +28,9 @@ Main stack:
   [Air](https://github.com/air-verse/air) for server reloads.
 - **SEO basics**: SVG favicon, meta tags (Open Graph, Twitter), `/robots.txt`
   and `/sitemap.xml` served at the root.
+  and `/sitemap.xml` served at the root. Optional JSON‑LD support via
+  `SEO.JSONLD` in `LayoutSEO`; canonical URLs are resolved using `BASE_URL`
+  when you pass a path (e.g. `/about`).
 - **Clean routing**: Minimal routes under `app/routes/`.
 
 ## Quick start
@@ -157,7 +160,9 @@ DATABASE_URL=postgres://user:pass@localhost:5432/gforge?sslmode=disable
 
 Additional environment variables:
 
-- `BASE_URL` — Used by `LayoutSEO` to resolve canonical links and og:url. Example: `https://example.com`.
+- `BASE_URL` — Used by `LayoutSEO` to resolve canonical links and og:url.
+  If `SEO.Canonical` is a path (e.g., `/about`), it will be prefixed with
+  this base. If you pass a full URL, it is used as-is. Example: `https://example.com`.
 - `LOG_FORMAT` — Set to `json` for JSON logs, otherwise plain text.
 - `CORS_ORIGINS` — Comma‑separated list of allowed origins in production (e.g., `https://example.com,https://admin.example.com`). If empty, defaults to permissive (good for dev).
 

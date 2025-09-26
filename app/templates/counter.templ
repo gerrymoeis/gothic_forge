@@ -1,34 +1,10 @@
 package templates
-import "strconv"
 
-// CounterValue renders only the numeric value.
-templ CounterValue(count int) {
-    <div id="count-value" role="status" aria-live="polite" class="text-6xl md:text-7xl font-extrabold tracking-tight">{ strconv.Itoa(count) }</div>
-}
-
-// CounterWidget renders the counter with the +1 button, suitable for embedding.
-templ CounterWidget(count int) {
-    <div id="counter-panel" class="mt-6 grid place-items-center gap-4">
-        @CounterValue(count)
-        <button class="btn btn-primary" aria-label="Increment counter" hx-post="/counter/increment" hx-target="#count-value" hx-swap="innerHTML">+1</button>
-    </div>
-}
-
-// CounterPage renders a page with a counter and an HTMX button to increment it.
-templ CounterPage(count int) {
-    @LayoutSEO(SEO{
-        Title:       "HTMX Counter · Gothic Forge",
-        Description: "Demonstrasi HTMX counter tanpa JavaScript kustom, hanya atribut HTMX.",
-        Keywords:    []string{"htmx", "templ", "fiber", "counter"},
-        Canonical:   "/counter",
-    }) {
-        <section class="min-h-screen grid place-items-center py-16">
-            <div class="text-center space-y-6">
-                <h1 class="text-4xl md:text-5xl font-extrabold">HTMX Counter</h1>
-                @CounterWidget(count)
-            </div>
-        </section>
-    }
+// Note: Counter components were consolidated into index.templ to simplify the
+// starter demo. Keep a tiny no-op component to ensure generated imports stay
+// consistent and avoid unused-import errors in generated code.
+templ DeprecatedCounterNote() {
+    <div class="hidden"></div>
 }
 
 

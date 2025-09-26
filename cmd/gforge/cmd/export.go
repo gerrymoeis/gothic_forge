@@ -1,88 +1,26 @@
 package cmd
 
 import (
-	"bytes"
-	"context"
-	"fmt"
-	"io"
-	"io/fs"
-	"os"
-	"path/filepath"
-	"strings"
+    "fmt"
+    "io"
+    "io/fs"
+    "os"
+    "path/filepath"
+    "strings"
 
-	"github.com/a-h/templ"
-	"github.com/fatih/color"
-	"github.com/spf13/cobra"
+    "github.com/fatih/color"
+    "github.com/spf13/cobra"
 
-	"gothicforge/app/ssg"
-	"gothicforge/app/templates"
+    "gothicforge/app/ssg"
 )
 
 var (
 	outDir string
 )
 
-var exportCmd = &cobra.Command{
-	Use:   "export",
-	Short: "Export static pages (SSG) to an output directory",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if outDir == "" {
-			outDir = "dist"
-		}
-		color.Cyan("Exporting static pages to %s...", outDir)
-		if err := os.MkdirAll(outDir, 0o755); err != nil {
-			return fmt.Errorf("create out dir: %w", err)
-		}
-
-		// 1) Export registered SSG pages
-		pages := ssg.Pages()
-		for _, p := range pages {
-			html, err := p.Render(context.Background())
-			if err != nil {
-				return fmt.Errorf("render %s: %w", p.Path, err)
-			}
-			target := pathFor(outDir, p.Path)
-			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
-				return fmt.Errorf("mkdir for %s: %w", target, err)
-			}
-			if err := os.WriteFile(target, []byte(html), 0o644); err != nil {
-				return fmt.Errorf("write %s: %w", target, err)
-			}
-			color.Green("✔ page %s -> %s", p.Path, target)
-		}
-
-		// 2) Copy /static assets
-		if err := copyDir("./app/static", filepath.Join(outDir, "static")); err != nil {
-			return fmt.Errorf("copy static: %w", err)
-		}
-		color.Green("✔ static -> %s", filepath.Join(outDir, "static"))
-
-		// 3) Export a root-level 404.html for static hosts
-		notFoundHTML, err := renderToString(context.Background(), templates.NotFound())
-		if err != nil {
-			return fmt.Errorf("render 404: %w", err)
-		}
-		if err := os.WriteFile(filepath.Join(outDir, "404.html"), []byte(notFoundHTML), 0o644); err != nil {
-			return fmt.Errorf("write 404.html: %w", err)
-		}
-		color.Green("✔ 404 -> %s", filepath.Join(outDir, "404.html"))
-
-		color.HiGreen("Done.")
-		return nil
-	},
-}
-
 func init() {
-	exportCmd.Flags().StringVarP(&outDir, "out", "o", "dist", "output directory for static export")
-	rootCmd.AddCommand(exportCmd)
-}
-
-func renderToString(ctx context.Context, c templ.Component) (string, error) {
-	var buf bytes.Buffer
-	if err := c.Render(ctx, &buf); err != nil {
-		return "", err
-	}
-	return buf.String(), nil
+    exportCmd.Flags().StringVarP(&outDir, "out", "o", "dist", "output directory for static export")
+    rootCmd.AddCommand(exportCmd)
 }
 
 func pathFor(out, routePath string) string {

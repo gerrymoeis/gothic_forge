@@ -7,8 +7,10 @@ package templates
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-// Index is the example page used for the home route. Matches the generated placeholder name.
-func Index() templ.Component {
+import "strconv"
+
+// CounterValue renders only the numeric value.
+func CounterValue(count int) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -29,7 +31,88 @@ func Index() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Var2 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div id=\"count-value\" role=\"status\" aria-live=\"polite\" class=\"text-6xl md:text-7xl font-extrabold tracking-tight\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var2 string
+		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(count))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `app/templates/index.templ`, Line: 6, Col: 139}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+// CounterWidget renders the counter with the +1 button, suitable for embedding.
+func CounterWidget(count int) templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var3 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var3 == nil {
+			templ_7745c5c3_Var3 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div id=\"counter-panel\" class=\"mt-6 grid place-items-center gap-4\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = CounterValue(count).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<button class=\"btn btn-primary\" aria-label=\"Increment counter\" hx-post=\"/counter/increment\" hx-target=\"#count-value\" hx-swap=\"innerHTML\">+1</button></div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+// Index is the example page used for the home route. Matches the generated placeholder name.
+func Index() templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var4 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var4 == nil {
+			templ_7745c5c3_Var4 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Var5 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 			templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 			templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
 			if !templ_7745c5c3_IsBuffer {
@@ -41,7 +124,15 @@ func Index() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"mx-auto max-w-7xl px-4 md:px-6\"><div class=\"navbar bg-base-100/60 backdrop-blur rounded-box mt-4\"><div class=\"navbar-start\"><a href=\"/\" class=\"btn btn-ghost text-xl\">Gothic Forge</a></div><div class=\"navbar-center hidden md:flex\"><ul class=\"menu menu-horizontal px-1\"><li><a href=\"/counter\">Counter</a></li><li><a href=\"/healthz\">Health</a></li></ul></div><div class=\"navbar-end\"></div></div><section class=\"min-h-screen pt-20 pb-12 md:pt-28 md:pb-16 grid place-items-center\"><div class=\"w-full max-w-4xl text-center\"><h1 class=\"text-6xl md:text-7xl font-extrabold tracking-tight leading-tight text-primary\">Gothic Forge</h1><p class=\"mt-5 text-lg md:text-2xl text-base-content/70 leading-relaxed\">Batteries-included Go starter. Secure by default. Zero-JS interactivity with HTMX.</p><div class=\"mt-8 flex flex-wrap items-center justify-center gap-3\"><a href=\"/counter\" class=\"btn btn-primary\">Counter Demo</a> <a href=\"/healthz\" class=\"btn btn-ghost\">Health Check</a></div><div class=\"mt-10\"><div class=\"card bg-base-200 border border-base-300 rounded-box shadow-xl max-w-md mx-auto\"><div class=\"card-body items-center text-center\"><h3 class=\"card-title\">Live Counter</h3><div class=\"mt-4 w-full max-w-xs mx-auto\"><div id=\"counter-mount\" hx-get=\"/counter/widget\" hx-trigger=\"load\" hx-swap=\"outerHTML\"></div></div></div></div></div></div></section><section class=\"my-12 md:my-16\"><div class=\"mx-auto max-w-5xl border-t border-base-300/70\"></div></section><section class=\"my-12\"><div class=\"mx-auto max-w-5xl grid gap-6 md:grid-cols-3\"><div class=\"card bg-base-100 border border-base-300 shadow-md transition hover:-translate-y-0.5\"><div class=\"card-body items-center text-center\"><h2 class=\"card-title\">Secure defaults</h2><p class=\"opacity-80\">Helmet, CSP, CSRF, sessions, limiter, compression and CORS are prewired.</p></div></div><div class=\"card bg-base-100 border border-base-300 shadow-md transition hover:-translate-y-0.5\"><div class=\"card-body items-center text-center\"><h2 class=\"card-title\">Developer-first DX</h2><p class=\"opacity-80\">Run gforge dev for live SSR (Templ), hot reload (Air) and CDN DaisyUI.</p></div></div><div class=\"card bg-base-100 border border-base-300 shadow-md transition hover:-translate-y-0.5\"><div class=\"card-body items-center text-center\"><h2 class=\"card-title\">One sandbox</h2><p class=\"opacity-80\">Code only in /app/. Everything else is prewired plumbing.</p></div></div></div></section><footer class=\"mt-8 mb-12 opacity-70 text-sm text-center\"><p>Made with Templ + Fiber + HTMX</p></footer></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"mx-auto max-w-7xl px-4 md:px-6\"><div class=\"navbar bg-base-100/60 backdrop-blur rounded-box mt-4 border border-base-300/70 shadow-xl ring-1 ring-base-300/40\"><div class=\"navbar-start\"><a href=\"/\" class=\"btn btn-ghost text-xl\">Gothic Forge</a></div><div class=\"navbar-center hidden md:flex\"></div><div class=\"navbar-end\"><a class=\"btn btn-ghost\" href=\"https://github.com/gerrymoeis/gothic_forge\" target=\"_blank\" rel=\"noopener\">GitHub</a></div></div><section class=\"pt-16 pb-12 md:pt-20 md:pb-16\"><div class=\"container mx-auto px-6\"><div class=\"text-center\"><h1 class=\"text-5xl md:text-7xl font-extrabold tracking-tight leading-tight bg-gradient-to-r from-indigo-500 via-blue-500 to-pink-500 bg-clip-text text-transparent\">Gothic Forge</h1><p class=\"mt-4 text-xl md:text-2xl text-base-content/90 leading-relaxed\">Batteries‑included Go starter. Secure by default. Zero‑JS interactivity with HTMX.</p><div class=\"mt-8 flex flex-wrap items-center justify-center gap-3\"><a href=\"#stack\" class=\"btn btn-primary\">Explore the stack</a> <a href=\"https://github.com/gerrymoeis/gothic_forge\" class=\"btn\" target=\"_blank\" rel=\"noopener\">Star on GitHub</a></div></div><section class=\"min-h-[30vh] grid place-items-center mt-10\"><div class=\"card bg-base-200/60 border border-base-300/80 rounded-box shadow-2xl w-full max-w-xl\"><div class=\"card-body items-center text-center\"><h3 class=\"card-title text-2xl\">Live Counter</h3><div class=\"mt-4 w-full max-w-xs mx-auto\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = CounterWidget(0).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div></div></div></section></div></section><section class=\"my-12 md:my-16\"><div class=\"mx-auto max-w-5xl border-t border-base-300/70\"></div></section><section id=\"stack\" class=\"my-12\"><div class=\"container mx-auto px-6\"><div class=\"grid gap-6 sm:grid-cols-2 lg:grid-cols-3 justify-items-center\"><a class=\"group card bg-base-100/70 border border-base-300/80 shadow-lg transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl hover:ring-1 hover:ring-primary/40 w-full max-w-sm\" href=\"https://go.dev\" target=\"_blank\" rel=\"noopener\"><div class=\"card-body items-center text-center\"><h2 class=\"card-title text-2xl group-hover:text-primary\">Go</h2><p class=\"opacity-80\">Fast, typed, batteries-friendly.</p></div></a> <a class=\"group card bg-base-100/70 border border-base-300/80 shadow-lg transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl hover:ring-1 hover:ring-primary/40 w-full max-w-sm\" href=\"https://templ.guide\" target=\"_blank\" rel=\"noopener\"><div class=\"card-body items-center text-center\"><h2 class=\"card-title text-2xl group-hover:text-primary\">Templ</h2><p class=\"opacity-80\">Type-safe server-side UI.</p></div></a> <a class=\"group card bg-base-100/70 border border-base-300/80 shadow-lg transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl hover:ring-1 hover:ring-primary/40 w-full max-w-sm\" href=\"https://htmx.org\" target=\"_blank\" rel=\"noopener\"><div class=\"card-body items-center text-center\"><h2 class=\"card-title text-2xl group-hover:text-primary\">HTMX</h2><p class=\"opacity-80\">Hypermedia interactivity with HTML.</p></div></a> <a class=\"group card bg-base-100/70 border border-base-300/80 shadow-lg transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl hover:ring-1 hover:ring-primary/40 w-full max-w-sm\" href=\"https://tailwindcss.com\" target=\"_blank\" rel=\"noopener\"><div class=\"card-body items-center text-center\"><h2 class=\"card-title text-2xl group-hover:text-primary\">Tailwind CSS</h2><p class=\"opacity-80\">Utility-first styling.</p></div></a> <a class=\"group card bg-base-100/70 border border-base-300/80 shadow-lg transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl hover:ring-1 hover:ring-primary/40 w-full max-w-sm\" href=\"https://daisyui.com\" target=\"_blank\" rel=\"noopener\"><div class=\"card-body items-center text-center\"><h2 class=\"card-title text-2xl group-hover:text-primary\">DaisyUI</h2><p class=\"opacity-80\">Styled components on Tailwind.</p></div></a> <a class=\"group card bg-base-100/70 border border-base-300/80 shadow-lg transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl hover:ring-1 hover:ring-primary/40 w-full max-w-sm\" href=\"https://github.com/gofiber/fiber\" target=\"_blank\" rel=\"noopener\"><div class=\"card-body items-center text-center\"><h2 class=\"card-title text-2xl group-hover:text-primary\">Fiber</h2><p class=\"opacity-80\">Fast, expressive web framework.</p></div></a></div></div></section><footer class=\"mt-8 mb-12 opacity-70 text-sm text-center\"><p>Made with Templ + Fiber + HTMX</p></footer></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -52,7 +143,8 @@ func Index() templ.Component {
 			Description: "All batteries included. Minimal friction. Focus on building.",
 			Keywords:    nil,
 			Canonical:   "/",
-		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+			JSONLD:      WebSiteJSONLD("Gothic Forge", "/"),
+		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var5), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
