@@ -1,5 +1,8 @@
 package templates
-import "strconv"
+import (
+    "strconv"
+    home "gothicforge/app/templates/home"
+)
 
 // CounterValue renders only the numeric value.
 templ CounterValue(count int) {
@@ -24,7 +27,7 @@ templ Index() {
         JSONLD:      WebSiteJSONLD("Gothic Forge", "/"),
     }) {
         <div class="mx-auto max-w-7xl px-4 md:px-6">
-            <div class="navbar bg-base-100/60 backdrop-blur rounded-box mt-4 border border-base-300/70 shadow-xl ring-1 ring-base-300/40">
+            <div class="navbar bg-base-100/60 backdrop-blur rounded-box mt-4 border border-white/15 shadow-xl ring-1 ring-white/10">
                 <div class="navbar-start">
                     <a href="/" class="btn btn-ghost text-xl">Gothic Forge</a>
                 </div>
@@ -36,16 +39,9 @@ templ Index() {
 
             <section class="pt-16 pb-12 md:pt-20 md:pb-16">
                 <div class="container mx-auto px-6">
-                    <div class="text-center">
-                        <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight bg-gradient-to-r from-indigo-500 via-blue-500 to-pink-500 bg-clip-text text-transparent">Gothic Forge</h1>
-                        <p class="mt-4 text-xl md:text-2xl text-base-content/90 leading-relaxed">Batteries‑included Go starter. Secure by default. Zero‑JS interactivity with HTMX.</p>
-                        <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
-                            <a href="#stack" class="btn btn-primary">Explore the stack</a>
-                            <a href="https://github.com/gerrymoeis/gothic_forge" class="btn" target="_blank" rel="noopener">Star on GitHub</a>
-                        </div>
-                    </div>
+                    @home.HomeHero()
                     <section class="min-h-[30vh] grid place-items-center mt-10">
-                        <div class="card bg-base-200/60 border border-base-300/80 rounded-box shadow-2xl w-full max-w-xl">
+                        <div class="card bg-base-200/60 border border-white/10 rounded-box shadow-xl ring-1 ring-white/10 w-full max-w-xl">
                             <div class="card-body items-center text-center">
                                 <h3 class="card-title text-2xl">Live Counter</h3>
                                 <div class="mt-4 w-full max-w-xs mx-auto">
@@ -64,37 +60,37 @@ templ Index() {
             <section id="stack" class="my-12">
                 <div class="container mx-auto px-6">
                     <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 justify-items-center">
-                        <a class="group card bg-base-100/70 border border-base-300/80 shadow-lg transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl hover:ring-1 hover:ring-primary/40 w-full max-w-sm" href="https://go.dev" target="_blank" rel="noopener">
+                        <a class="group card bg-base-100/70 border border-white/10 ring-1 ring-white/5 shadow transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl hover:ring-1 hover:ring-primary/40 w-full max-w-sm" href="https://go.dev" target="_blank" rel="noopener">
                         <div class="card-body items-center text-center">
                             <h2 class="card-title text-2xl group-hover:text-primary">Go</h2>
                             <p class="opacity-80">Fast, typed, batteries-friendly.</p>
                         </div>
                         </a>
-                        <a class="group card bg-base-100/70 border border-base-300/80 shadow-lg transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl hover:ring-1 hover:ring-primary/40 w-full max-w-sm" href="https://templ.guide" target="_blank" rel="noopener">
+                        <a class="group card bg-base-100/70 border border-white/10 ring-1 ring-white/5 shadow transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl hover:ring-1 hover:ring-primary/40 w-full max-w-sm" href="https://templ.guide" target="_blank" rel="noopener">
                         <div class="card-body items-center text-center">
                             <h2 class="card-title text-2xl group-hover:text-primary">Templ</h2>
                             <p class="opacity-80">Type-safe server-side UI.</p>
                         </div>
                         </a>
-                        <a class="group card bg-base-100/70 border border-base-300/80 shadow-lg transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl hover:ring-1 hover:ring-primary/40 w-full max-w-sm" href="https://htmx.org" target="_blank" rel="noopener">
+                        <a class="group card bg-base-100/70 border border-white/10 ring-1 ring-white/5 shadow transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl hover:ring-1 hover:ring-primary/40 w-full max-w-sm" href="https://htmx.org" target="_blank" rel="noopener">
                         <div class="card-body items-center text-center">
                             <h2 class="card-title text-2xl group-hover:text-primary">HTMX</h2>
                             <p class="opacity-80">Hypermedia interactivity with HTML.</p>
                         </div>
                         </a>
-                        <a class="group card bg-base-100/70 border border-base-300/80 shadow-lg transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl hover:ring-1 hover:ring-primary/40 w-full max-w-sm" href="https://tailwindcss.com" target="_blank" rel="noopener">
+                        <a class="group card bg-base-100/70 border border-white/10 ring-1 ring-white/5 shadow transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl hover:ring-1 hover:ring-primary/40 w-full max-w-sm" href="https://tailwindcss.com" target="_blank" rel="noopener">
                         <div class="card-body items-center text-center">
                             <h2 class="card-title text-2xl group-hover:text-primary">Tailwind CSS</h2>
                             <p class="opacity-80">Utility-first styling.</p>
                         </div>
                         </a>
-                        <a class="group card bg-base-100/70 border border-base-300/80 shadow-lg transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl hover:ring-1 hover:ring-primary/40 w-full max-w-sm" href="https://daisyui.com" target="_blank" rel="noopener">
+                        <a class="group card bg-base-100/70 border border-white/10 ring-1 ring-white/5 shadow transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl hover:ring-1 hover:ring-primary/40 w-full max-w-sm" href="https://daisyui.com" target="_blank" rel="noopener">
                         <div class="card-body items-center text-center">
                             <h2 class="card-title text-2xl group-hover:text-primary">DaisyUI</h2>
                             <p class="opacity-80">Styled components on Tailwind.</p>
                         </div>
                         </a>
-                        <a class="group card bg-base-100/70 border border-base-300/80 shadow-lg transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl hover:ring-1 hover:ring-primary/40 w-full max-w-sm" href="https://github.com/gofiber/fiber" target="_blank" rel="noopener">
+                        <a class="group card bg-base-100/70 border border-white/10 ring-1 ring-white/5 shadow transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl hover:ring-1 hover:ring-primary/40 w-full max-w-sm" href="https://github.com/gofiber/fiber" target="_blank" rel="noopener">
                         <div class="card-body items-center text-center">
                             <h2 class="card-title text-2xl group-hover:text-primary">Fiber</h2>
                             <p class="opacity-80">Fast, expressive web framework.</p>

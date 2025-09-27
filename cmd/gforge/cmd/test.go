@@ -1,25 +1,26 @@
 package cmd
 
 import (
-	"bufio"
-	"context"
-	"encoding/json"
-	"fmt"
-	"os"
-	"os/exec"
-	"strings"
-	"time"
+    "bufio"
+    "context"
+    "encoding/json"
+    "fmt"
+    "os"
+    "os/exec"
+    "strings"
+    "time"
 
-	"github.com/fatih/color"
-	"github.com/spf13/cobra"
+    "github.com/fatih/color"
+    "github.com/spf13/cobra"
+    "gothicforge/internal/execx"
 )
 
 var testCmd = &cobra.Command{
-	Use:   "test",
-	Short: "Run unit tests (pretty logger)",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runGoTests(cmd.Context())
-	},
+    Use:   "test",
+    Short: "Run unit tests (pretty logger)",
+    RunE: func(cmd *cobra.Command, args []string) error {
+        return runGoTests(cmd.Context())
+    },
 }
 
 type testEvent struct {
@@ -31,22 +32,26 @@ type testEvent struct {
 }
 
 func runGoTests(ctx context.Context) error {
-	color.Cyan("==> Running tests (go test -json ./...)")
-	start := time.Now()
+    // Ensure templ code is generated once before running tests
+    if templPath, err := ensureTool("templ", "github.com/a-h/templ/cmd/templ@latest"); err == nil {
+        _ = execx.Run(ctx, "templ generate", templPath, "generate", "-include-version=false", "-include-timestamp=false")
+    } else {
+        color.Yellow("templ not available and auto-install failed: %v", err)
+    }
 
-	cmd := exec.CommandContext(ctx, "go", "test", "-json", "./...")
-	cmd.Env = os.Environ()
-	stdout, _ := cmd.StdoutPipe()
-	stderr, _ := cmd.StderrPipe()
-	if err := cmd.Start(); err != nil {
-		return err
-	}
+    color.Cyan("==> Running tests (go test -json ./...)")
+    start := time.Now()
+    cmd := exec.CommandContext(ctx, "go", "test", "-json", "./...")
+    cmd.Env = os.Environ()
+    stdout, _ := cmd.StdoutPipe()
+    stderr, _ := cmd.StderrPipe()
+    if err := cmd.Start(); err != nil {
+        return err
+    }
 
 	// Stats
 	pkgs := map[string]struct{}{}
 	var pass, fail, skip, total int
-
-	// Read stdout JSON events
 	outDone := make(chan error, 1)
 	go func() {
 		s := bufio.NewScanner(stdout)

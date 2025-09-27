@@ -7,9 +7,8 @@ package templates
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-// Health page removed for the ultra-minimal starter. Keep a tiny placeholder
-// component so the generated file remains consistent without affecting the app.
-func DeprecatedHealthNote() templ.Component {
+// HomeHero is the centered hero section for the homepage.
+func HomeHero() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -30,7 +29,7 @@ func DeprecatedHealthNote() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"hidden\"></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"text-center\"><h1 class=\"text-5xl md:text-7xl font-extrabold tracking-tight leading-tight bg-gradient-to-r from-indigo-500 via-blue-500 to-pink-500 bg-clip-text text-transparent\">Gothic Forge</h1><p class=\"mt-4 text-xl md:text-2xl text-base-content/90 leading-relaxed\">Batteries‑included Go starter. Secure by default. Zero‑JS interactivity with HTMX.</p><div class=\"mt-8 flex flex-wrap items-center justify-center gap-3\"><a href=\"#stack\" class=\"btn btn-primary\">Explore the stack</a> <a href=\"https://github.com/gerrymoeis/gothic_forge\" class=\"btn\" target=\"_blank\" rel=\"noopener\">Star on GitHub</a></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
