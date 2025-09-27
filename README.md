@@ -20,18 +20,19 @@ Main stack:
 ## Features
 
 - **Secure-by-default middleware**: Helmet, CSRF, request ID, rate limiter,
-  compression, CORS, recover.
 - **SSR with Templ**: Components in `app/templates/` compiled to Go.
 - **Pure Go Tailwind CSS**: No Node required. `gotailwindcss` builds
   `app/static/styles.css` from `app/static/tailwind.input.css`.
 - **Hot reload**: `gforge dev` runs Templ (watch), `gotailwindcss` (rebuild) and
   [Air](https://github.com/air-verse/air) for server reloads.
 - **SEO basics**: SVG favicon, meta tags (Open Graph, Twitter), `/robots.txt`
-  and `/sitemap.xml` served at the root.
   and `/sitemap.xml` served at the root. Optional JSON‑LD support via
   `SEO.JSONLD` in `LayoutSEO`; canonical URLs are resolved using `BASE_URL`
   when you pass a path (e.g. `/about`).
-- **Clean routing**: Minimal routes under `app/routes/`.
+- **Clean routing**: Single entry `app/routes/routes.go` plus per‑page
+  registrants via `routes.RegisterRoute` for scalable scaffolding.
+- **Tests UX**: `gforge test` discovers only packages that have tests to avoid
+  noisy `? [no test files]` output.
 
 ## Quick start
 
@@ -58,7 +59,6 @@ go run ./cmd/gforge dev
 Then open:
 
 - http://127.0.0.1:8080/
-- http://127.0.0.1:8080/healthz
 - http://127.0.0.1:8080/robots.txt
 - http://127.0.0.1:8080/sitemap.xml
 
@@ -76,12 +76,65 @@ gotailwindcss build -o app/static/styles.css app/static/tailwind.input.css
 ## Routes
 
 - `/` — Home (Templ component: `templates.Index()`)
-- `/healthz` — JSON health check `{ "ok": true }`
+- `/counter/widget` — HTMX widget partial (server‑rendered)
+- `POST /counter/increment` — Session‑backed counter increment
 - `/favicon.ico` — 301 → `/static/favicon.svg`
-- `/robots.txt` — Static robots, points to `/sitemap.xml`
-- `/sitemap.xml` — Static sitemap (update URLs for production)
-- `/db/ping` — DB connectivity probe (returns ok=false when `DATABASE_URL` is not set)
+- `/robots.txt` — Static robots
+- `/sitemap.xml` — Static sitemap
 - `/static/*` — Static files (CSS, favicon, etc.)
+
+Main entry for routes: `app/routes/routes.go`.
+Additional routes can be registered via per‑page registrants created by the
+scaffolder (see “Scaffolding pages”).
+
+## Scaffolding
+
+- `gforge add page <name>`
+
+  Creates a new Templ page and wires it automatically:
+
+  - `app/templates/<name>.templ`
+  - `app/routes/<name>_route.go` (registrant via `routes.RegisterRoute`)
+  - `app/ssg/register_<name>.go` (included in static export)
+
+  Example:
+
+  ```powershell
+  go run ./cmd/gforge add page about
+  # Visit http://127.0.0.1:8080/about
+  ```
+
+- `gforge add api <name>`
+
+  Creates a minimal JSON API endpoint `GET /api/<name>` with a standard envelope:
+
+  - `app/routes/<kebab-name>_api.go`
+
+  Example:
+
+  ```powershell
+  go run ./cmd/gforge add api example
+  # Visit http://127.0.0.1:8080/api/example
+  # -> {"ok": true, "data": {"message": "Example endpoint"}}
+  ```
+
+- `gforge add db`
+
+  Creates a pure-SQL migrations folder:
+
+  - `app/db/migrations/`
+  - `app/db/migrations/0001_init.sql` (only if folder was empty)
+
+  Example:
+
+  ```powershell
+  go run ./cmd/gforge add db
+  ```
+
+Notes:
+
+- Registrants keep `app/routes/routes.go` clean and stable.
+- For CI, you can skip Templ generation inside `gforge add page` by setting `GFORGE_SKIP_TEMPL=1`.
 
 ## 404 page
 
@@ -106,10 +159,18 @@ internal/
 
 ## Testing
 
-Basic route tests live in `app/routes/routes_test.go`.
+Tests are centralized under the `tests/` folder for a clean app surface. Use the
+CLI to run only packages that contain tests (no `? [no test files]` noise):
 
 ```powershell
-go test ./app/routes -v
+go run ./cmd/gforge test
+```
+
+If you run the raw Go command, it’s normal to see `? [no test files]` lines for
+packages without tests:
+
+```powershell
+go test ./...
 ```
 
 ## Production build
@@ -139,7 +200,7 @@ gotailwindcss build -o app/static/styles.css app/static/tailwind.input.css
 
 Update SEO assets for production:
 
-- Edit meta tags in `app/templates/layout.templ` and `app/templates/layout_seo.templ` (title, description, OG/Twitter)
+- Edit meta tags in `app/templates/layout_seo.templ` (title, description, OG/Twitter)
 - Update absolute URLs in `app/static/robots.txt` and `app/static/sitemap.xml`
 
 By default, Gothic Forge does not inject JSON‑LD or inline scripts to keep security tight and output minimal. If you need structured data, add a small component explicitly where required.
@@ -165,6 +226,59 @@ Additional environment variables:
   this base. If you pass a full URL, it is used as-is. Example: `https://example.com`.
 - `LOG_FORMAT` — Set to `json` for JSON logs, otherwise plain text.
 - `CORS_ORIGINS` — Comma‑separated list of allowed origins in production (e.g., `https://example.com,https://admin.example.com`). If empty, defaults to permissive (good for dev).
+
+- `RATE_LIMIT_MAX` — Max requests allowed per window. Default: `120`.
+- `RATE_LIMIT_WINDOW_SECONDS` — Window duration in seconds. Default: `60`.
+- `STATIC_CACHE_SECONDS` — Cache-Control max-age for files under `/static`.
+  In development, the default is `no-store` unless you set a value. In
+  production, the default is `86400` (1 day) if unset. ETag is also applied to
+  `/static` responses.
+
+#### .env usage
+
+Copy `.env.example` to `.env` and restart the server after any change so new
+values are picked up:
+
+```powershell
+Copy-Item .env.example .env -Force
+go run ./cmd/gforge dev
+```
+
+#### Verify rate limiting
+
+Set small values locally and restart the dev server:
+
+```env
+RATE_LIMIT_MAX=10
+RATE_LIMIT_WINDOW_SECONDS=10
+```
+
+Use the counter button quickly or run a quick loop:
+
+```powershell
+for ($i=1; $i -le 15; $i++) {
+  try { (Invoke-WebRequest -UseBasicParsing -Method POST http://127.0.0.1:8080/counter/increment).StatusCode }
+  catch { $_.Exception.Response.StatusCode.value__ }
+}
+```
+
+Expect `429` after the threshold within the same window.
+
+#### Verify static caching
+
+Set a small cache window (e.g., 30s) and restart:
+
+```env
+STATIC_CACHE_SECONDS=30
+```
+
+Then check headers:
+
+```powershell
+$resp = Invoke-WebRequest -Uri http://127.0.0.1:8080/static/app.js -Method GET
+$resp.Headers["Cache-Control"]   # public, max-age=30
+$resp.Headers["ETag"]            # present
+```
 
 ## Security
 

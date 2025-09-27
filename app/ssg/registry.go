@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/a-h/templ"
+	"gothicforge/app/templates"
 )
 
 // Renderer renders a page to HTML.
@@ -47,4 +48,9 @@ func ToHTMLFunc(f func() templ.Component) Renderer {
 		}
 		return buf.String(), nil
 	}
+}
+
+// Default registration so export works out-of-the-box.
+func init() {
+	Register("/", ToHTMLFunc(func() templ.Component { return templates.Index() }))
 }

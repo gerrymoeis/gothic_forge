@@ -13,6 +13,8 @@ var addCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
 			fmt.Println("Available features: redis, auth, db")
+			fmt.Println("Subcommands:")
+			fmt.Println("  gforge add page <name>   # Scaffold a new Templ page, wire route, and register for SSG")
 			return nil
 		}
 		switch args[0] {

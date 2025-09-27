@@ -39,9 +39,26 @@ func runGoTests(ctx context.Context) error {
         color.Yellow("templ not available and auto-install failed: %v", err)
     }
 
-    color.Cyan("==> Running tests (go test -json ./...)")
+    // Discover only packages that actually contain tests to avoid noisy
+    // "[no test files]" lines. Fallback to ./... if discovery fails or none found.
+    listCmd := exec.CommandContext(ctx, "go", "list", "-f", "{{if or .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}", "./...")
+    listCmd.Env = os.Environ()
+    out, _ := listCmd.Output()
+    var testPkgs []string
+    for _, line := range strings.Split(string(out), "\n") {
+        line = strings.TrimSpace(line)
+        if line != "" {
+            testPkgs = append(testPkgs, line)
+        }
+    }
+    if len(testPkgs) == 0 {
+        testPkgs = []string{"./..."}
+    }
+
+    color.Cyan("==> Running tests on %d package(s)", len(testPkgs))
     start := time.Now()
-    cmd := exec.CommandContext(ctx, "go", "test", "-json", "./...")
+    args := append([]string{"test", "-json"}, testPkgs...)
+    cmd := exec.CommandContext(ctx, "go", args...)
     cmd.Env = os.Environ()
     stdout, _ := cmd.StdoutPipe()
     stderr, _ := cmd.StderrPipe()

@@ -1,9 +1,10 @@
-package db
+package tests
 
 import (
 	"context"
 	"os"
 	"testing"
+	db "gothicforge/app/db"
 )
 
 func TestConnect_NoDatabaseURL(t *testing.T) {
@@ -15,7 +16,7 @@ func TestConnect_NoDatabaseURL(t *testing.T) {
 		}
 	}()
 
-	p, err := Connect(context.Background())
+	p, err := db.Connect(context.Background())
 	if err != nil {
 		t.Fatalf("Connect returned error: %v", err)
 	}
