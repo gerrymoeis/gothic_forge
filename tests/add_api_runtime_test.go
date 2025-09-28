@@ -1,3 +1,6 @@
+//go:build examples
+// +build examples
+
 package tests
 
 import (

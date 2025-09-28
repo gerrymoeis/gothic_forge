@@ -1,7 +1,0 @@
--- Gothic Forge initial migration (example)
--- Write your SQL here. Keep migrations pure SQL for portability and clarity.
--- Example:
--- CREATE TABLE example (
---   id SERIAL PRIMARY KEY,
---   name TEXT NOT NULL
--- );
