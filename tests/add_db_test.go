@@ -8,8 +8,8 @@ import (
 )
 
 func pathExists(p string) bool {
-    _, err := os.Stat(p)
-    return err == nil
+	_, err := os.Stat(p)
+	return err == nil
 }
 
 func TestAddDB_Scaffold_MigrationsFolder(t *testing.T) {

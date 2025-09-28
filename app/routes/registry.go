@@ -8,13 +8,13 @@ var registrars []func(*fiber.App)
 // RegisterRoute allows scaffolds and features to register route-mounting functions
 // without editing the central routes.go.
 func RegisterRoute(fn func(*fiber.App)) {
-    registrars = append(registrars, fn)
+	registrars = append(registrars, fn)
 }
 
 // applyRegistrars mounts all registered route functions. Kept unexported to
 // maintain a single public entry point (Register) for the app.
 func applyRegistrars(app *fiber.App) {
-    for _, fn := range registrars {
-        fn(app)
-    }
+	for _, fn := range registrars {
+		fn(app)
+	}
 }

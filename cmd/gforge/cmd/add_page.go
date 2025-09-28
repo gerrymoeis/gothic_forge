@@ -1,16 +1,16 @@
 package cmd
 
 import (
-    "fmt"
-    "os"
-    "path/filepath"
-    "regexp"
-    "strings"
+	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
 
-    "github.com/fatih/color"
-    "github.com/spf13/cobra"
+	"github.com/fatih/color"
+	"github.com/spf13/cobra"
 
-    "gothicforge/internal/execx"
+	"gothicforge/internal/execx"
 )
 
 var addPageCmd = &cobra.Command{
@@ -92,16 +92,16 @@ func init() {
 			}
 		}
 
-		        // 4) Create a dedicated route registrant using routes.RegisterRoute
-        rDir := filepath.Join("app", "routes")
-        if err := os.MkdirAll(rDir, 0o755); err != nil {
-            return err
-        }
-        rPath := filepath.Join(rDir, name+"_route.go")
-        if _, err := os.Stat(rPath); err == nil {
-            color.Yellow("Route registrant already exists: %s", rPath)
-        } else {
-            routeGo := fmt.Sprintf(`package routes
+		// 4) Create a dedicated route registrant using routes.RegisterRoute
+		rDir := filepath.Join("app", "routes")
+		if err := os.MkdirAll(rDir, 0o755); err != nil {
+			return err
+		}
+		rPath := filepath.Join(rDir, name+"_route.go")
+		if _, err := os.Stat(rPath); err == nil {
+			color.Yellow("Route registrant already exists: %s", rPath)
+		} else {
+			routeGo := fmt.Sprintf(`package routes
 
 import (
     "github.com/gofiber/fiber/v2"
@@ -117,43 +117,42 @@ func init() {
     })
 }
 `, "%s", "%s")
-            routeGo = fmt.Sprintf(routeGo, name, comp)
-            if err := os.WriteFile(rPath, []byte(routeGo), 0o644); err != nil {
-                return err
-            }
-            // best-effort format
-            _ = execx.Run(cmd.Context(), "gofmt", "gofmt", "-w", rPath)
-            color.Green("✔ Added route registrant for /%s in %s", name, rPath)
-        }
+			routeGo = fmt.Sprintf(routeGo, name, comp)
+			if err := os.WriteFile(rPath, []byte(routeGo), 0o644); err != nil {
+				return err
+			}
+			// best-effort format
+			_ = execx.Run(cmd.Context(), "gofmt", "gofmt", "-w", rPath)
+			color.Green("✔ Added route registrant for /%s in %s", name, rPath)
+		}
 
 		color.Green("✔ Created %s", tPath)
 		color.Green("✔ Updated %s", sPath)
 		return nil
 	},
-
 }
 
 func init() {
-    addCmd.AddCommand(addPageCmd)
+	addCmd.AddCommand(addPageCmd)
 }
 
 func sanitizeKebab(s string) string {
-    s = strings.ToLower(s)
-    re := regexp.MustCompile(`[^a-z0-9\-]+`)
-    s = re.ReplaceAllString(s, "-")
-    s = strings.Trim(s, "-")
-    return s
+	s = strings.ToLower(s)
+	re := regexp.MustCompile(`[^a-z0-9\-]+`)
+	s = re.ReplaceAllString(s, "-")
+	s = strings.Trim(s, "-")
+	return s
 }
 
 func toPascal(kebab string) string {
-    parts := strings.Split(kebab, "-")
-    for i, p := range parts {
-        if p == "" {
-            continue
-        }
-        parts[i] = strings.ToUpper(p[:1]) + p[1:]
-    }
-    return strings.Join(parts, "")
+	parts := strings.Split(kebab, "-")
+	for i, p := range parts {
+		if p == "" {
+			continue
+		}
+		parts[i] = strings.ToUpper(p[:1]) + p[1:]
+	}
+	return strings.Join(parts, "")
 }
 
 // Note: no wireRoute needed; routes are registered via per-page registrants.

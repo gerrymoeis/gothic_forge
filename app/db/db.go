@@ -10,9 +10,9 @@ import (
 )
 
 var (
-	poolMu      sync.Mutex
-	cachedPool  *pgxpool.Pool
-	cachedURL   string
+	poolMu     sync.Mutex
+	cachedPool *pgxpool.Pool
+	cachedURL  string
 )
 
 // Connect returns a pgx pool when DATABASE_URL is set, otherwise (nil, nil).

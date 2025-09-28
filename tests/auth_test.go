@@ -4,151 +4,175 @@
 package tests
 
 import (
-    "context"
-    "io"
-    "net/http/httptest"
-    "net/url"
-    "os"
-    "strings"
-    "testing"
-    "time"
+	"context"
+	"io"
+	"net/http/httptest"
+	"net/url"
+	"os"
+	"strings"
+	"testing"
+	"time"
 
-    "github.com/gofiber/fiber/v2"
-    "gothicforge/app/db"
-    "gothicforge/app/routes"
-    "gothicforge/internal/env"
-    "gothicforge/internal/server"
+	"github.com/gofiber/fiber/v2"
+	"gothicforge/app/db"
+	"gothicforge/app/routes"
+	"gothicforge/internal/env"
+	"gothicforge/internal/server"
 )
 
 func hasDatabase() bool {
-    if strings.TrimSpace(os.Getenv("DATABASE_URL")) == "" {
-        return false
-    }
+	if strings.TrimSpace(os.Getenv("DATABASE_URL")) == "" {
+		return false
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 1500*time.Millisecond)
+	defer cancel()
+	pool, err := db.ConnectCached(ctx)
+	if err != nil || pool == nil {
+		return false
+	}
+	ctx2, cancel2 := context.WithTimeout(context.Background(), 1500*time.Millisecond)
+	defer cancel2()
+	if err := pool.Ping(ctx2); err != nil {
+		return false
+	}
+	return true
+}
 
 func TestAuth_Register_DuplicateEmail_Conflict_SkipIfNoDB(t *testing.T) {
-    if !hasDatabase() {
-        t.Skip("DATABASE_URL not set; skipping auth integration test")
-    }
-    app := buildAuthTestApp()
-    // Seed CSRF
-    g := httptest.NewRequest("GET", "/", nil)
-    gr, err := app.Test(g)
-    if err != nil { t.Fatalf("seed GET failed: %v", err) }
-    csrfPair := extractCookiePairFromValues(gr.Header.Values("Set-Cookie"), "_gforge_csrf")
-    if csrfPair == "" { t.Fatalf("missing csrf cookie") }
-    csrfToken := strings.SplitN(csrfPair, "=", 2)[1]
+	if !hasDatabase() {
+		t.Skip("DATABASE_URL not set; skipping auth integration test")
+	}
+	app := buildAuthTestApp()
+	// Seed CSRF
+	g := httptest.NewRequest("GET", "/", nil)
+	gr, err := app.Test(g)
+	if err != nil {
+		t.Fatalf("seed GET failed: %v", err)
+	}
+	csrfPair := extractCookiePairFromValues(gr.Header.Values("Set-Cookie"), "_gforge_csrf")
+	if csrfPair == "" {
+		t.Fatalf("missing csrf cookie")
+	}
+	csrfToken := strings.SplitN(csrfPair, "=", 2)[1]
 
-    email := "dupe+test@example.com"
-    pass := "supersecret"
+	email := "dupe+test@example.com"
+	pass := "supersecret"
 
-    // First register
-    f1 := url.Values{}
-    f1.Set("email", email)
-    f1.Set("password", pass)
-    r1 := httptest.NewRequest("POST", "/auth/register", strings.NewReader(f1.Encode()))
-    r1.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-    r1.Header.Set("X-CSRF-Token", csrfToken)
-    r1.Header.Set("Cookie", csrfPair)
-    resp1, err := app.Test(r1)
-    if err != nil { t.Fatalf("register #1 failed: %v", err) }
-    if resp1.StatusCode != fiber.StatusSeeOther {
-        b, _ := io.ReadAll(resp1.Body)
-        t.Fatalf("expected 303, got %d (%s)", resp1.StatusCode, string(b))
-    }
+	// First register
+	f1 := url.Values{}
+	f1.Set("email", email)
+	f1.Set("password", pass)
+	r1 := httptest.NewRequest("POST", "/auth/register", strings.NewReader(f1.Encode()))
+	r1.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r1.Header.Set("X-CSRF-Token", csrfToken)
+	r1.Header.Set("Cookie", csrfPair)
+	resp1, err := app.Test(r1)
+	if err != nil {
+		t.Fatalf("register #1 failed: %v", err)
+	}
+	if resp1.StatusCode != fiber.StatusSeeOther {
+		b, _ := io.ReadAll(resp1.Body)
+		t.Fatalf("expected 303, got %d (%s)", resp1.StatusCode, string(b))
+	}
 
-    // Second register with same email → 409
-    f2 := url.Values{}
-    f2.Set("email", email)
-    f2.Set("password", pass)
-    r2 := httptest.NewRequest("POST", "/auth/register", strings.NewReader(f2.Encode()))
-    r2.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-    r2.Header.Set("X-CSRF-Token", csrfToken)
-    r2.Header.Set("Cookie", csrfPair)
-    resp2, err := app.Test(r2)
-    if err != nil { t.Fatalf("register #2 failed: %v", err) }
-    if resp2.StatusCode != fiber.StatusConflict {
-        b, _ := io.ReadAll(resp2.Body)
-        t.Fatalf("expected 409, got %d (%s)", resp2.StatusCode, string(b))
-    }
+	// Second register with same email → 409
+	f2 := url.Values{}
+	f2.Set("email", email)
+	f2.Set("password", pass)
+	r2 := httptest.NewRequest("POST", "/auth/register", strings.NewReader(f2.Encode()))
+	r2.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r2.Header.Set("X-CSRF-Token", csrfToken)
+	r2.Header.Set("Cookie", csrfPair)
+	resp2, err := app.Test(r2)
+	if err != nil {
+		t.Fatalf("register #2 failed: %v", err)
+	}
+	if resp2.StatusCode != fiber.StatusConflict {
+		b, _ := io.ReadAll(resp2.Body)
+		t.Fatalf("expected 409, got %d (%s)", resp2.StatusCode, string(b))
+	}
 }
 
 func TestAuth_Register_InvalidEmail_BadRequest_SkipIfNoDB(t *testing.T) {
-    if !hasDatabase() { t.Skip("DATABASE_URL not set; skipping auth integration test") }
-    app := buildAuthTestApp()
-    // Seed CSRF
-    g := httptest.NewRequest("GET", "/", nil)
-    gr, err := app.Test(g)
-    if err != nil { t.Fatalf("seed GET failed: %v", err) }
-    csrfPair := extractCookiePairFromValues(gr.Header.Values("Set-Cookie"), "_gforge_csrf")
-    if csrfPair == "" { t.Fatalf("missing csrf cookie") }
-    csrfToken := strings.SplitN(csrfPair, "=", 2)[1]
+	if !hasDatabase() {
+		t.Skip("DATABASE_URL not set; skipping auth integration test")
+	}
+	app := buildAuthTestApp()
+	// Seed CSRF
+	g := httptest.NewRequest("GET", "/", nil)
+	gr, err := app.Test(g)
+	if err != nil {
+		t.Fatalf("seed GET failed: %v", err)
+	}
+	csrfPair := extractCookiePairFromValues(gr.Header.Values("Set-Cookie"), "_gforge_csrf")
+	if csrfPair == "" {
+		t.Fatalf("missing csrf cookie")
+	}
+	csrfToken := strings.SplitN(csrfPair, "=", 2)[1]
 
-    f := url.Values{}
-    f.Set("email", "not-an-email")
-    f.Set("password", "supersecret")
-    r := httptest.NewRequest("POST", "/auth/register", strings.NewReader(f.Encode()))
-    r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-    r.Header.Set("X-CSRF-Token", csrfToken)
-    r.Header.Set("Cookie", csrfPair)
-    resp, err := app.Test(r)
-    if err != nil { t.Fatalf("register failed: %v", err) }
-    if resp.StatusCode != fiber.StatusBadRequest {
-        b, _ := io.ReadAll(resp.Body)
-        t.Fatalf("expected 400, got %d (%s)", resp.StatusCode, string(b))
-    }
+	f := url.Values{}
+	f.Set("email", "not-an-email")
+	f.Set("password", "supersecret")
+	r := httptest.NewRequest("POST", "/auth/register", strings.NewReader(f.Encode()))
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r.Header.Set("X-CSRF-Token", csrfToken)
+	r.Header.Set("Cookie", csrfPair)
+	resp, err := app.Test(r)
+	if err != nil {
+		t.Fatalf("register failed: %v", err)
+	}
+	if resp.StatusCode != fiber.StatusBadRequest {
+		b, _ := io.ReadAll(resp.Body)
+		t.Fatalf("expected 400, got %d (%s)", resp.StatusCode, string(b))
+	}
 }
 
 func TestAuth_Register_ShortPassword_BadRequest_SkipIfNoDB(t *testing.T) {
-    if !hasDatabase() { t.Skip("DATABASE_URL not set; skipping auth integration test") }
-    app := buildAuthTestApp()
-    // Seed CSRF
-    g := httptest.NewRequest("GET", "/", nil)
-    gr, err := app.Test(g)
-    if err != nil { t.Fatalf("seed GET failed: %v", err) }
-    csrfPair := extractCookiePairFromValues(gr.Header.Values("Set-Cookie"), "_gforge_csrf")
-    if csrfPair == "" { t.Fatalf("missing csrf cookie") }
-    csrfToken := strings.SplitN(csrfPair, "=", 2)[1]
+	if !hasDatabase() {
+		t.Skip("DATABASE_URL not set; skipping auth integration test")
+	}
+	app := buildAuthTestApp()
+	// Seed CSRF
+	g := httptest.NewRequest("GET", "/", nil)
+	gr, err := app.Test(g)
+	if err != nil {
+		t.Fatalf("seed GET failed: %v", err)
+	}
+	csrfPair := extractCookiePairFromValues(gr.Header.Values("Set-Cookie"), "_gforge_csrf")
+	if csrfPair == "" {
+		t.Fatalf("missing csrf cookie")
+	}
+	csrfToken := strings.SplitN(csrfPair, "=", 2)[1]
 
-    f := url.Values{}
-    f.Set("email", "shortpass@example.com")
-    f.Set("password", "1234567") // 7 chars
-    r := httptest.NewRequest("POST", "/auth/register", strings.NewReader(f.Encode()))
-    r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-    r.Header.Set("X-CSRF-Token", csrfToken)
-    r.Header.Set("Cookie", csrfPair)
-    resp, err := app.Test(r)
-    if err != nil { t.Fatalf("register failed: %v", err) }
-    if resp.StatusCode != fiber.StatusBadRequest {
-        b, _ := io.ReadAll(resp.Body)
-        t.Fatalf("expected 400, got %d (%s)", resp.StatusCode, string(b))
-    }
-}
-    ctx, cancel := context.WithTimeout(context.Background(), 1500*time.Millisecond)
-    defer cancel()
-    pool, err := db.ConnectCached(ctx)
-    if err != nil || pool == nil {
-        return false
-    }
-    ctx2, cancel2 := context.WithTimeout(context.Background(), 1500*time.Millisecond)
-    defer cancel2()
-    if err := pool.Ping(ctx2); err != nil {
-        return false
-    }
-    return true
+	f := url.Values{}
+	f.Set("email", "shortpass@example.com")
+	f.Set("password", "1234567") // 7 chars
+	r := httptest.NewRequest("POST", "/auth/register", strings.NewReader(f.Encode()))
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r.Header.Set("X-CSRF-Token", csrfToken)
+	r.Header.Set("Cookie", csrfPair)
+	resp, err := app.Test(r)
+	if err != nil {
+		t.Fatalf("register failed: %v", err)
+	}
+	if resp.StatusCode != fiber.StatusBadRequest {
+		b, _ := io.ReadAll(resp.Body)
+		t.Fatalf("expected 400, got %d (%s)", resp.StatusCode, string(b))
+	}
 }
 
 func buildAuthTestApp() *fiber.App {
-    _ = env.Load()
-    app := server.New()
-    routes.Register(app)
-    return app
+	_ = env.Load()
+	app := server.New()
+	routes.Register(app)
+	return app
 }
 
 func TestAuth_Register_Me_Logout_Me_SkipIfNoDB(t *testing.T) {
-    if !hasDatabase() {
-        t.Skip("DATABASE_URL not set; skipping auth integration test")
-    }
-    app := buildAuthTestApp()
+	if !hasDatabase() {
+		t.Skip("DATABASE_URL not set; skipping auth integration test")
+	}
+	app := buildAuthTestApp()
 
 	g := httptest.NewRequest("GET", "/", nil)
 	gr, err := app.Test(g)

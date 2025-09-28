@@ -1,15 +1,15 @@
 package tests
 
 import (
-    "io"
-    "net/http/httptest"
-    "strings"
-    "testing"
+	"io"
+	"net/http/httptest"
+	"strings"
+	"testing"
 
-    "github.com/gofiber/fiber/v2"
-    "gothicforge/app/routes"
-    "gothicforge/internal/env"
-    "gothicforge/internal/server"
+	"github.com/gofiber/fiber/v2"
+	"gothicforge/app/routes"
+	"gothicforge/internal/env"
+	"gothicforge/internal/server"
 )
 
 func buildTestApp() *fiber.App {

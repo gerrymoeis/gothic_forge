@@ -2,9 +2,9 @@ package tests
 
 import (
 	"context"
+	db "gothicforge/app/db"
 	"os"
 	"testing"
-	db "gothicforge/app/db"
 )
 
 func TestConnect_NoDatabaseURL(t *testing.T) {

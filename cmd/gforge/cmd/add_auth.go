@@ -1,21 +1,22 @@
 package cmd
 
 import (
-    "bufio"
-    "errors"
-    "os"
-    "path/filepath"
-    "strings"
+	"bufio"
+	"errors"
+	"os"
+	"path/filepath"
+	"strings"
 
-    "github.com/fatih/color"
-    "github.com/spf13/cobra"
-    "gothicforge/internal/execx"
+	"gothicforge/internal/execx"
+
+	"github.com/fatih/color"
+	"github.com/spf13/cobra"
 )
 
 var addAuthCmd = &cobra.Command{
-    Use:   "auth",
-    Short: "Enable built-in auth scaffolding (routes, templates, users repo)",
-    Long: `Enables the built-in auth scaffolding that is gated by the 'authscaffold' build tag.
+	Use:   "auth",
+	Short: "Enable built-in auth scaffolding (routes, templates, users repo)",
+	Long: `Enables the built-in auth scaffolding that is gated by the 'authscaffold' build tag.
 
 This removes build tags from the auth files and regenerates Templ components.
 
@@ -27,13 +28,13 @@ Includes:
 - app/templates/auth_logout.templ
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-        paths := []string{
-            filepath.Join("app", "routes", "auth_routes.go"),
-            filepath.Join("app", "db", "users.go"),
-            filepath.Join("app", "templates", "auth_login.templ"),
-            filepath.Join("app", "templates", "auth_register.templ"),
-            filepath.Join("app", "templates", "auth_logout.templ"),
-        }
+		paths := []string{
+			filepath.Join("app", "routes", "auth_routes.go"),
+			filepath.Join("app", "db", "users.go"),
+			filepath.Join("app", "templates", "auth_login.templ"),
+			filepath.Join("app", "templates", "auth_register.templ"),
+			filepath.Join("app", "templates", "auth_logout.templ"),
+		}
 		var changed int
 		for _, p := range paths {
 			ok, err := removeAuthBuildTag(p)

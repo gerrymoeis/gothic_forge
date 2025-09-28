@@ -1,8 +1,8 @@
 package cmd
 
 func init() {
-    // Customize the default help output to document the workflow and commands clearly.
-    rootCmd.SetHelpTemplate(`Gothic Forge CLI — batteries-included developer experience
+	// Customize the default help output to document the workflow and commands clearly.
+	rootCmd.SetHelpTemplate(`Gothic Forge CLI — batteries-included developer experience
 
 Usage:
   gforge [command]

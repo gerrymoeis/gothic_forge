@@ -1,14 +1,14 @@
 package main
 
 import (
-    "fmt"
-    "log"
+	"fmt"
+	"log"
 
-    "github.com/gofiber/fiber/v2"
-    "gothicforge/app/routes"
-    "gothicforge/app/templates"
-    "gothicforge/internal/env"
-    "gothicforge/internal/server"
+	"github.com/gofiber/fiber/v2"
+	"gothicforge/app/routes"
+	"gothicforge/app/templates"
+	"gothicforge/internal/env"
+	"gothicforge/internal/server"
 )
 
 func main() {
