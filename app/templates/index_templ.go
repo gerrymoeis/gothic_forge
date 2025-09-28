@@ -148,13 +148,13 @@ func Index() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = LayoutSEO(SEO{
+		templ_7745c5c3_Err = LayoutSEO(MergeWithDefaults(SEO{
 			Title:       "Gothic Forge — It just runs",
 			Description: "All batteries included. Minimal friction. Focus on building.",
 			Keywords:    nil,
 			Canonical:   "/",
 			JSONLD:      WebSiteJSONLD("Gothic Forge", "/"),
-		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var5), templ_7745c5c3_Buffer)
+		})).Render(templ.WithChildren(ctx, templ_7745c5c3_Var5), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

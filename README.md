@@ -136,6 +136,15 @@ Notes:
 - Registrants keep `app/routes/routes.go` clean and stable.
 - For CI, you can skip Templ generation inside `gforge add page` by setting `GFORGE_SKIP_TEMPL=1`.
 
+## Robots & Sitemap
+
+The dev server serves `/robots.txt` and `/sitemap.xml` from `app/static/` if present.
+If not present, it serves sensible defaults at runtime.
+
+The `gforge export` command copies any `app/static/{robots.txt,sitemap.xml}` to the
+export root. If either file is missing, it generates a minimal default using
+registered SSG pages and `BASE_URL` for canonical links.
+
 ## 404 page
 
 A minimal themed 404 is wired as a fallback after routes in

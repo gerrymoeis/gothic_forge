@@ -17,6 +17,40 @@ type SEO struct {
     JSONLD string
 }
 
+// DefaultSEO returns the site-wide defaults sourced from environment variables.
+// Developers can set SITE_TITLE, SITE_DESCRIPTION, and SITE_KEYWORDS (CSV) to
+// control the defaults without editing code.
+func DefaultSEO() SEO {
+    title := env.Get("SITE_TITLE", "Gothic Forge")
+    desc := env.Get("SITE_DESCRIPTION", "")
+    var keywords []string
+    if csv := strings.TrimSpace(env.Get("SITE_KEYWORDS", "")); csv != "" {
+        parts := strings.Split(csv, ",")
+        for _, p := range parts {
+            p = strings.TrimSpace(p)
+            if p != "" {
+                keywords = append(keywords, p)
+            }
+        }
+    }
+    return SEO{Title: title, Description: desc, Keywords: keywords}
+}
+
+// MergeWithDefaults fills in empty SEO fields using DefaultSEO.
+func MergeWithDefaults(meta SEO) SEO {
+    d := DefaultSEO()
+    if meta.Title == "" {
+        meta.Title = d.Title
+    }
+    if meta.Description == "" {
+        meta.Description = d.Description
+    }
+    if len(meta.Keywords) == 0 && len(d.Keywords) > 0 {
+        meta.Keywords = d.Keywords
+    }
+    return meta
+}
+
 // JSONLDRaw wraps a JSON string as a templ component without escaping.
 func JSONLDRaw(json string) templ.Component {
     return templ.Raw(json)

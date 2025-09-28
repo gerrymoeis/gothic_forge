@@ -20,9 +20,10 @@ import (
     "github.com/gofiber/fiber/v2/middleware/helmet"
     "github.com/gofiber/fiber/v2/middleware/limiter"
     "github.com/gofiber/fiber/v2/middleware/logger"
-    "github.com/gofiber/fiber/v2/middleware/recover"
+    recovermw "github.com/gofiber/fiber/v2/middleware/recover"
     "github.com/gofiber/fiber/v2/middleware/requestid"
     "github.com/gofiber/fiber/v2/middleware/session"
+    redisstore "github.com/gofiber/storage/redis/v3"
 )
 
 // New constructs a Fiber app with secure, production-ready defaults.
@@ -35,7 +36,7 @@ func New() *fiber.App {
 
     // Core middlewares
     app.Use(requestid.New())
-    app.Use(recover.New())
+    app.Use(recovermw.New())
     // Dev-only debug headers to help analyze request patterns (method/path/counter)
     if env.Get("APP_ENV", "development") == "development" {
         var mu sync.Mutex
@@ -141,12 +142,41 @@ func New() *fiber.App {
         },
     }))
 
-    // Session store (cookie-based, in-memory store)
-    sess := session.New(session.Config{
-        CookieHTTPOnly: true,
-        CookieSecure:   env.Get("APP_ENV", "development") == "production",
-        CookieSameSite: "Lax",
-    })
+    // Session store: Redis (if REDIS_URL is set) else in-memory cookie store
+    var sess *session.Store
+    if ru := strings.TrimSpace(env.Get("REDIS_URL", "")); ru != "" {
+        // Initialize Redis storage safely; fall back to cookie store on error
+        if st, err := newRedisStorageSafe(ru); err == nil {
+            if env.Get("APP_ENV", "development") == "development" {
+                log.Printf("Sessions: using Redis storage (%s)", ru)
+            }
+            sess = session.New(session.Config{
+                CookieName:    "session",
+                CookieHTTPOnly: true,
+                CookieSecure:   env.Get("APP_ENV", "development") == "production",
+                CookieSameSite: "Lax",
+                Storage:        st,
+            })
+        } else {
+            log.Printf("Sessions: Redis unavailable (%s): %v; falling back to cookie store", ru, err)
+            sess = session.New(session.Config{
+                CookieName:    "session",
+                CookieHTTPOnly: true,
+                CookieSecure:   env.Get("APP_ENV", "development") == "production",
+                CookieSameSite: "Lax",
+            })
+        }
+    } else {
+        if env.Get("APP_ENV", "development") == "development" {
+            log.Printf("Sessions: using in-memory cookie store")
+        }
+        sess = session.New(session.Config{
+            CookieName:    "session",
+            CookieHTTPOnly: true,
+            CookieSecure:   env.Get("APP_ENV", "development") == "production",
+            CookieSameSite: "Lax",
+        })
+    }
     app.Use(func(c *fiber.Ctx) error {
         // attach session to context for handlers to use via Locals
         s, err := sess.Get(c)
@@ -225,6 +255,19 @@ func New() *fiber.App {
     app.Static("/static", detectStaticDir())
 
     return app
+}
+
+// newRedisStorageSafe creates a Redis storage and recovers from panics that
+// can occur when the provided REDIS_URL points to an unavailable instance.
+// It returns an error in that case so callers can gracefully fall back.
+func newRedisStorageSafe(url string) (st *redisstore.Storage, err error) {
+    defer func() {
+        if r := recover(); r != nil {
+            err = fmt.Errorf("redis storage init failed: %v", r)
+        }
+    }()
+    st = redisstore.New(redisstore.Config{URL: url})
+    return st, nil
 }
 
 // detectStaticDir tries to locate the module root (folder containing go.mod)

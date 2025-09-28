@@ -6,6 +6,7 @@ import (
 
     "github.com/gofiber/fiber/v2"
     "gothicforge/app/routes"
+    "gothicforge/app/templates"
     "gothicforge/internal/env"
     "gothicforge/internal/server"
 )
@@ -41,8 +42,7 @@ func main() {
 	app.All("/*", func(c *fiber.Ctx) error {
 		c.Type("html", "utf-8")
 		c.Status(fiber.StatusNotFound)
-		html := "<!doctype html><html><head><meta charset=\"utf-8\"><title>404</title></head><body><h1>404</h1><p>Not Found</p></body></html>"
-		return c.SendString(html)
+		return templates.NotFound().Render(c.UserContext(), c.Response().BodyWriter())
 	})
 
 	host := env.Get("FIBER_HOST", "127.0.0.1")

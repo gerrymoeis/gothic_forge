@@ -18,13 +18,13 @@ templ CounterWidget(count int) {
 
 // Index is the example page used for the home route. Matches the generated placeholder name.
 templ Index() {
-    @LayoutSEO(SEO{
+    @LayoutSEO(MergeWithDefaults(SEO{
         Title:       "Gothic Forge — It just runs",
         Description: "All batteries included. Minimal friction. Focus on building.",
         Keywords:    nil,
         Canonical:   "/",
         JSONLD:      WebSiteJSONLD("Gothic Forge", "/"),
-    }) {
+    })) {
         <div class="mx-auto max-w-7xl px-4 md:px-6">
             <div class="navbar bg-base-100/60 backdrop-blur rounded-box mt-4 border border-white/15 shadow-xl ring-1 ring-white/10">
                 <div class="navbar-start">

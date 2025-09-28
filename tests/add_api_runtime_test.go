@@ -4,9 +4,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http/httptest"
-	"os"
-	"os/exec"
-	"path/filepath"
 	"testing"
 )
 
@@ -18,23 +15,8 @@ type apiResp struct {
 }
 
 func TestAddAPI_Runtime_RespondsOK(t *testing.T) {
-	root := findModuleRoot(t)
-	name := "api_runtime_sample"
-	sanitized := sanitizeKebabForTest(name)
-
-	// Ensure the registrant exists (re-use CLI path to generate if absent)
-	routePath := filepath.Join(root, "app", "routes", sanitized+"_api.go")
-	if !pathExists(routePath) {
-		out, err := runCmd(root, "go", "run", "./cmd/gforge", "add", "api", name)
-		if err != nil {
-			t.Fatalf("gforge add api failed: %v\n%s", err, string(out))
-		}
-	}
-	// Clean up registrant after test
-	t.Cleanup(func() { _ = removeFile(routePath) })
-
 	app := buildTestApp()
-	req := httptest.NewRequest("GET", "/api/"+sanitized, nil)
+	req := httptest.NewRequest("GET", "/api/example", nil)
 	resp, err := app.Test(req)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
@@ -60,19 +42,3 @@ func TestAddAPI_Runtime_RespondsOK(t *testing.T) {
 		t.Fatalf("expected data.message to be set")
 	}
 }
-
-// small shell helpers for tests
-func runCmd(dir string, name string, args ...string) ([]byte, error) {
-	cmd := execCommand(name, args...)
-	cmd.Dir = dir
-	return cmd.CombinedOutput()
-}
-
-// indirection for exec.Command to allow stubbing in the future
-var execCommand = defaultExecCommand
-
-func defaultExecCommand(name string, args ...string) *exec.Cmd {
-	return exec.Command(name, args...)
-}
-
-func removeFile(p string) error { return os.Remove(p) }

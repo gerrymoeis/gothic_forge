@@ -1,0 +1,39 @@
+package templates
+
+// AuthLogin renders the login form page.
+templ AuthLogin() {
+    @LayoutSEO(MergeWithDefaults(SEO{
+        Title:     "Sign in",
+        Canonical: "/auth/login",
+    })) {
+        <div class="mx-auto max-w-7xl px-4 md:px-6">
+            <div class="navbar bg-base-100/60 backdrop-blur rounded-box mt-4 border border-white/15 shadow-xl ring-1 ring-white/10">
+                <div class="navbar-start">
+                    <a href="/" class="btn btn-ghost text-xl">Gothic Forge</a>
+                </div>
+                <div class="navbar-center hidden md:flex"></div>
+                <div class="navbar-end">
+                    <a class="btn btn-ghost" href="/auth/register">Register</a>
+                </div>
+            </div>
+
+            <section class="pt-16 pb-12 md:pt-20 md:pb-16 grid place-items-center">
+                <div class="card bg-base-200/60 border border-white/10 rounded-box shadow-xl ring-1 ring-white/10 w-full max-w-md">
+                    <div class="card-body">
+                        <h1 class="card-title text-2xl">Sign in</h1>
+                        <form class="form-control mt-6 grid gap-4" hx-post="/auth/login" hx-swap="none">
+                            <label class="input input-bordered flex items-center gap-2">
+                                <input type="email" name="email" class="grow" placeholder="Email" required/>
+                            </label>
+                            <label class="input input-bordered flex items-center gap-2">
+                                <input type="password" name="password" class="grow" placeholder="Password" minlength="8" required/>
+                            </label>
+                            <button class="btn btn-primary" type="submit">Sign in</button>
+                            <div class="text-sm opacity-80">No account? <a class="link" href="/auth/register">Register</a></div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </div>
+    }
+}

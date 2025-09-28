@@ -1,0 +1,31 @@
+package templates
+
+// NotFound is a styled 404 page consistent with the site layout.
+templ NotFound() {
+    @LayoutSEO(MergeWithDefaults(SEO{
+        Title:     "404 – Not Found",
+        Canonical: "/404",
+    })) {
+        <div class="mx-auto max-w-7xl px-4 md:px-6">
+            <div class="navbar bg-base-100/60 backdrop-blur rounded-box mt-4 border border-white/15 shadow-xl ring-1 ring-white/10">
+                <div class="navbar-start">
+                    <a href="/" class="btn btn-ghost text-xl">Gothic Forge</a>
+                </div>
+                <div class="navbar-center hidden md:flex"></div>
+                <div class="navbar-end">
+                    <a class="btn btn-ghost" href="/auth/login">Sign in</a>
+                </div>
+            </div>
+
+            <section class="min-h-[50vh] grid place-items-center">
+                <div class="text-center">
+                    <h1 class="text-6xl md:text-8xl font-extrabold tracking-tight">404</h1>
+                    <p class="mt-4 opacity-80">The page you are looking for could not be found.</p>
+                    <div class="mt-6">
+                        <a class="btn btn-primary" href="/">Go home</a>
+                    </div>
+                </div>
+            </section>
+        </div>
+    }
+}
