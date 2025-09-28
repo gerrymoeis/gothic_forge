@@ -24,6 +24,15 @@ var doctorCmd = &cobra.Command{
 		check("govulncheck (security)", "govulncheck")
 		check("vegeta (load test)", "vegeta")
 
+		color.Cyan("Media optimizers (optional, used by export):")
+		check("ffmpeg (video/audio optimize)", "ffmpeg")
+		check("jpegoptim (JPEG strip/progressive)", "jpegoptim")
+		check("oxipng (PNG lossless optimize)", "oxipng")
+		check("gifsicle (GIF optimize)", "gifsicle")
+
+		color.Cyan("Deployment:")
+		check("flyctl (Fly.io CLI)", "flyctl")
+
 		color.Cyan("System:")
 		fmt.Printf("OS: %s  ARCH: %s\n", runtime.GOOS, runtime.GOARCH)
 		return nil
@@ -35,7 +44,6 @@ func check(title, name string) {
 		color.Green("✔ %s found (%s)", title, name)
 		return
 	}
-	// Fallback: check Go bin dir even if not on PATH
 	if binDir := goBinDir(); binDir != "" {
 		candidate := filepath.Join(binDir, exeName(name))
 		if fi, err := os.Stat(candidate); err == nil && !fi.IsDir() {

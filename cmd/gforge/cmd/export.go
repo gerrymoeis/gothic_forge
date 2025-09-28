@@ -1,11 +1,17 @@
 package cmd
 
 import (
+    "bytes"
     "fmt"
+    "image"
+    "image/jpeg"
+    "image/png"
     "io"
     "io/fs"
     "os"
+    "os/exec"
     "path/filepath"
+    "strconv"
     "strings"
 
     "github.com/fatih/color"
@@ -131,44 +137,12 @@ func pathFor(out, routePath string) string {
     // map "/" -> out/index.html, "/about" -> out/about/index.html
     clean := strings.TrimPrefix(routePath, "/")
     if clean == "" {
+        return filepath.Join(out, "index.html")
     }
     return filepath.Join(out, clean, "index.html")
 }
 
-func copyDir(src, dst string) error {
-    // ensure dst exists
-    if err := os.MkdirAll(dst, 0o755); err != nil {
-        return err
-    }
-    return filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
-        if err != nil {
-            return err
-        }
-        rel, err := filepath.Rel(src, path)
-        if err != nil {
-            return err
-        }
-        target := filepath.Join(dst, rel)
-        if d.IsDir() {
-            return os.MkdirAll(target, 0o755)
-        }
-        // copy file
-        in, err := os.Open(path)
-        if err != nil {
-            return err
-        }
-        defer in.Close()
-        out, err := os.Create(target)
-        if err != nil {
-            return err
-        }
-        if _, err := io.Copy(out, in); err != nil {
-            out.Close()
-            return err
-        }
-        return out.Close()
-    })
-}
+// removed unused copyDir; using copyDirMinified and copyFile instead
 
 // copyFile copies a single file from src to dst, creating parent directories for dst.
 func copyFile(src, dst string) error {
@@ -228,6 +202,21 @@ func copyDirMinified(m *minify.M, src, dst string) error {
             out, err := m.Bytes("image/svg+xml", b)
             if err != nil { out = b }
             return os.WriteFile(target, out, 0o644)
+        case ".png":
+            if err := optimizePNG(path, target); err == nil { return nil }
+            return copyFile(path, target)
+        case ".jpg", ".jpeg":
+            if err := optimizeJPEG(path, target); err == nil { return nil }
+            return copyFile(path, target)
+        case ".gif":
+            if err := optimizeGIF(path, target); err == nil { return nil }
+            return copyFile(path, target)
+        case ".mp4", ".mov":
+            if err := optimizeMP4MOV(path, target); err == nil { return nil }
+            return copyFile(path, target)
+        case ".webm", ".mp3", ".wav", ".ogg", ".m4a":
+            if err := optimizeAudioGeneric(path, target); err == nil { return nil }
+            return copyFile(path, target)
         default:
             // copy as-is
             in, err := os.Open(path)
@@ -240,6 +229,104 @@ func copyDirMinified(m *minify.M, src, dst string) error {
             return out.Close()
         }
     })
+}
+
+// ---- Media optimization helpers ----
+func hasTool(name string) bool {
+    _, err := exec.LookPath(name)
+    return err == nil
+}
+
+func envLossy() bool {
+    v := strings.TrimSpace(os.Getenv("GFORGE_MEDIA_LOSSY"))
+    return v == "1" || strings.EqualFold(v, "true") || strings.EqualFold(v, "yes")
+}
+
+func jpegQuality() int {
+    if s := strings.TrimSpace(os.Getenv("GFORGE_JPEG_QUALITY")); s != "" {
+        if n, err := strconv.Atoi(s); err == nil && n >= 1 && n <= 100 {
+            return n
+        }
+    }
+    return 85
+}
+
+func optimizePNG(src, dst string) error {
+    // Prefer oxipng for lossless optimization.
+    if hasTool("oxipng") {
+        if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil { return err }
+        cmd := exec.Command("oxipng", "-o", "3", "--strip", "all", "--preserve", "--quiet", "--out", dst, src)
+        return cmd.Run()
+    }
+    // Optional lossy fallback: re-encode PNG in Go (often minimal gains). Only when GFORGE_MEDIA_LOSSY=1.
+    if envLossy() {
+        f, err := os.Open(src)
+        if err != nil { return err }
+        defer f.Close()
+        img, _, err := image.Decode(f)
+        if err != nil { return err }
+        if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil { return err }
+        // Go's PNG is lossless; set BestCompression to try shrinking a bit.
+        var buf bytes.Buffer
+        enc := png.Encoder{CompressionLevel: png.BestCompression}
+        if err := enc.Encode(&buf, img); err != nil { return err }
+        return os.WriteFile(dst, buf.Bytes(), 0o644)
+    }
+    return fmt.Errorf("no optimizer available")
+}
+
+func optimizeJPEG(src, dst string) error {
+    // Prefer jpegoptim for lossless metadata strip + progressive.
+    if hasTool("jpegoptim") {
+        if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil { return err }
+        // jpegoptim writes in-place or to --dest directory.
+        cmd := exec.Command("jpegoptim", "--strip-all", "--all-progressive", "--quiet", "--dest="+filepath.Dir(dst), src)
+        if err := cmd.Run(); err == nil {
+            return nil
+        }
+    }
+    // Lossy fallback with Go encoder if enabled.
+    if envLossy() {
+        f, err := os.Open(src)
+        if err != nil { return err }
+        defer f.Close()
+        img, _, err := image.Decode(f)
+        if err != nil { return err }
+        if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil { return err }
+        var buf bytes.Buffer
+        if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: jpegQuality()}); err != nil { return err }
+        return os.WriteFile(dst, buf.Bytes(), 0o644)
+    }
+    return fmt.Errorf("no optimizer available")
+}
+
+func optimizeGIF(src, dst string) error {
+    if hasTool("gifsicle") {
+        if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil { return err }
+        cmd := exec.Command("gifsicle", "-O3", "-o", dst, src)
+        return cmd.Run()
+    }
+    return fmt.Errorf("no optimizer available")
+}
+
+func optimizeMP4MOV(src, dst string) error {
+    if hasTool("ffmpeg") {
+        if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil { return err }
+        // Lossless container optimization: faststart for MP4/MOV, stream copy.
+        cmd := exec.Command("ffmpeg", "-y", "-i", src, "-c", "copy", "-movflags", "+faststart", dst)
+        return cmd.Run()
+    }
+    return fmt.Errorf("no optimizer available")
+}
+
+func optimizeAudioGeneric(src, dst string) error {
+    if hasTool("ffmpeg") {
+        if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil { return err }
+        // Strip metadata, stream copy (no quality change).
+        cmd := exec.Command("ffmpeg", "-y", "-i", src, "-map_metadata", "-1", "-c", "copy", dst)
+        return cmd.Run()
+    }
+    return fmt.Errorf("no optimizer available")
 }
 // generateRobots returns a minimal robots.txt with an optional Sitemap line.
 func generateRobots() string {

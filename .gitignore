@@ -33,3 +33,20 @@ app/static/styles.css
 
 # Coverage
 coverage.out
+
+# Local environment files (keep .env.example tracked)
+.env
+.env.*
+!.env.example
+
+# Built CLI/server binaries in repo root (cross-platform convenience)
+gforge
+server
+
+# Logs and profiles
+*.log
+*.prof
+profile.out
+
+# Windows junk
+Desktop.ini

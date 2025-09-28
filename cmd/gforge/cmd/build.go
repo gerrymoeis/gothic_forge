@@ -9,8 +9,9 @@ import (
 )
 
 var buildCmd = &cobra.Command{
-	Use:   "build",
-	Short: "Build production server binary",
+	Use:    "build",
+	Short:  "Build production server binary",
+	Hidden: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Ensure templ code is generated once before build.
 		if err := execx.Run(cmd.Context(), "templ generate", "templ", "generate", "-include-version=false", "-include-timestamp=false"); err != nil {
