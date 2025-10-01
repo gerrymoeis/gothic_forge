@@ -162,8 +162,10 @@ cmd/
   gforge/         # CLI (doctor, dev, etc.)
   server/         # main web server entrypoint
 internal/
-  framework/      # shared server/env/exec helpers
-  server/         # alternate server entry (kept for compatibility)
+  env/            # .env loader and env helpers
+  execx/          # exec helpers for CLI and processes
+  server/         # Fiber app constructor and middleware
+  validate/       # input validation helpers
 ```
 
 ## Testing
@@ -343,9 +345,46 @@ git push origin v0.1.0
 
 Artifacts for `gforge` and the `gothic-forge-server` will be published.
 
-## Deployment examples
+## Omakase Deployment: Render + Neon + Upstash + Cloudflare Pages
 
-See `infra/` for examples:
+- **Render (SSR app runtime; Go-native)**
+  1. Install CLI: `go run ./cmd/gforge tools install deploy` (ensures `render`)
+  2. Login: `render login` (browser flow)
+  3. Create a New Web Service: https://dashboard.render.com/web/new?newUser=true
+  4. Configure Build/Start:
+     - Build Command: `templ generate && go build -o server ./cmd/server`
+       (Templ flags are applied by `gforge` locally; Render can just run `templ generate`.)
+     - Start Command: `./server`
+  5. Set env in Render:
+     - `APP_ENV=production`
+     - `FIBER_HOST=0.0.0.0`
+     - `FIBER_PORT=$PORT`
+     - `BASE_URL=https://<your-app>.onrender.com` (or your custom domain)
+     - `DATABASE_URL` (from Neon; see below)
+     - `REDIS_URL` (from Upstash; see below)
+     - `CORS_ORIGINS` (comma-separated, optional)
+  6. Optional: Set `RENDER_SERVICE_ID` in `.env` and run:
+     `go run ./cmd/gforge deploy --provider render` to trigger a deploy via CLI.
 
-- `infra/caddy/Caddyfile` — Caddy reverse proxy + static files
-- `infra/fly/fly.toml` — Fly.io single-binary deployment example
+- **Neon (Postgres)**
+  - Create a Neon project and database. Copy the connection string.
+  - Example DSN:
+    `postgresql://<user>:<pass>@<host>:5432/<db>?sslmode=require`
+  - Set it as `DATABASE_URL` in Render.
+
+- **Upstash (Redis for sessions)**
+  - Create a Redis database in Upstash and copy the Redis URL (TLS).
+  - Example URL: `rediss://:<password>@<host>:<port>`
+  - Set it as `REDIS_URL` in Render. The server auto-detects and uses Redis for sessions; otherwise it falls back to a secure cookie store.
+
+- **Cloudflare Pages (Static SSG)**
+  - Build static output locally or in CI:
+    `go run ./cmd/gforge export -o dist`
+  - Cloudflare Pages settings:
+    - Build command: `go run ./cmd/gforge export -o dist`
+    - Output directory: `dist`
+  - Note: SSG hosts static pages (e.g., `/`) only. Use Render for SSR endpoints.
+
+- **Security notes**
+  - CSP is strict by default (no inline scripts). CSS via jsDelivr, HTMX via unpkg; CSRF header is injected by `/static/app.js`.
+  - Sessions prefer Redis when `REDIS_URL` is set.

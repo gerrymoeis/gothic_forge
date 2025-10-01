@@ -1,14 +1,14 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"runtime"
+    "fmt"
+    "os"
+    "os/exec"
+    "path/filepath"
+    "runtime"
 
-	"github.com/fatih/color"
-	"github.com/spf13/cobra"
+    "github.com/fatih/color"
+    "github.com/spf13/cobra"
 )
 
 var doctorCmd = &cobra.Command{
@@ -31,7 +31,7 @@ var doctorCmd = &cobra.Command{
 		check("gifsicle (GIF optimize)", "gifsicle")
 
 		color.Cyan("Deployment:")
-		check("flyctl (Fly.io CLI)", "flyctl")
+		check("render (Render CLI - recommended)", "render")
 
 		color.Cyan("System:")
 		fmt.Printf("OS: %s  ARCH: %s\n", runtime.GOOS, runtime.GOARCH)

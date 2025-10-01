@@ -1,3 +1,4 @@
+version: 2
 project_name: gothic_forge
 
 dist: dist
@@ -28,9 +29,6 @@ archives:
     format_overrides:
       - goos: windows
         format: zip
-    replacements:
-      darwin: macOS
-      amd64: x86_64
 
 checksum:
   name_template: 'checksums.txt'
