@@ -1,0 +1,88 @@
+package templates
+
+import "time"
+
+templ Layout(title string) {
+  <!doctype html>
+  <html lang="en" data-theme="dim">
+    <head>
+      <meta charset="utf-8"/>
+      <meta name="viewport" content="width=device-width, initial-scale=1"/>
+      <title>{ title }</title>
+      <link rel="preconnect" href="https://cdn.jsdelivr.net"/>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui/dist/full.min.css"/>
+      <link rel="stylesheet" href="/static/styles/output.css?v=dev"/>
+      <link rel="stylesheet" href="/static/styles/overrides.css"/>
+      <script defer src="/static/app.js"></script>
+      <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/csp/dist/cdn.min.js"></script>
+      <script src="https://unpkg.com/htmx.org"></script>
+    </head>
+    <body class="min-h-screen bg-base-100 text-base-content hero-gradient">
+      <div class="navbar bg-base-100/60 backdrop-blur rounded-box mt-4 border border-white/15 shadow-xl ring-1 ring-white/10">
+        <div class="flex-1 px-2 text-lg font-semibold"><a class="btn btn-ghost text-xl" href="/">Gothic Forge v3</a></div>
+      </div>
+      <main class="container mx-auto p-4 md:pt-8">
+        { children... }
+      </main>
+      <footer class="footer footer-center bg-base-100/60 backdrop-blur border border-white/10 p-4 mt-8 rounded-box mx-4 md:mx-auto max-w-5xl">
+        <aside>
+          <p>© { time.Now().Year() } Gothic Forge v3</p>
+        </aside>
+      </footer>
+    </body>
+  </html>
+}
+
+// SEO metadata for pages
+type SEO struct {
+  Title       string
+  Description string
+  Canonical   string
+  Image       string
+  Keywords    string
+  JSONLD      string
+}
+
+// LayoutSEO adds SEO meta tags while keeping the same structure and assets as Layout.
+templ LayoutSEO(seo SEO) {
+  <!doctype html>
+  <html lang="en" data-theme="dim">
+    <head>
+      <meta charset="utf-8"/>
+      <meta name="viewport" content="width=device-width, initial-scale=1"/>
+      <title>{ seo.Title }</title>
+      <meta name="description" content={ seo.Description }/>
+      <link rel="canonical" href={ seo.Canonical }/>
+      <meta property="og:url" content={ seo.Canonical }/>
+      <meta property="og:title" content={ seo.Title }/>
+      <meta property="og:description" content={ seo.Description }/>
+      <meta property="og:image" content={ seo.Image }/>
+      <meta name="twitter:image" content={ seo.Image }/>
+      <meta name="twitter:card" content="summary_large_image"/>
+      <meta name="keywords" content={ seo.Keywords }/>
+      @templ.Raw("<script type=\"application/ld+json\">" + seo.JSONLD + "</script>")
+
+      <link rel="preconnect" href="https://cdn.jsdelivr.net"/>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui/dist/full.min.css"/>
+      <link rel="stylesheet" href="/static/styles/output.css?v=dev"/>
+      <link rel="stylesheet" href="/static/styles/overrides.css"/>
+      <script defer src="/static/app.js"></script>
+      <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/csp/dist/cdn.min.js"></script>
+      <script src="https://unpkg.com/htmx.org"></script>
+    </head>
+    <body class="min-h-screen bg-base-100 text-base-content hero-gradient">
+      <div class="navbar bg-base-100/60 backdrop-blur rounded-box mt-4 border border-white/15 shadow-xl ring-1 ring-white/10">
+        <div class="flex-1 px-2 text-lg font-semibold"><a class="btn btn-ghost text-xl" href="/">Gothic Forge v3</a></div>
+      </div>
+      <main class="container mx-auto p-4 md:pt-8">
+        { children... }
+      </main>
+      <footer class="footer footer-center bg-base-100/60 backdrop-blur border border-white/10 p-4 mt-8 rounded-box mx-4 md:mx-auto max-w-5xl">
+        <aside>
+          <p>© { time.Now().Year() } Gothic Forge v3</p>
+        </aside>
+      </footer>
+    </body>
+  </html>
+}
+ 

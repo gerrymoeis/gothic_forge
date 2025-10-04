@@ -1,0 +1,19 @@
+# Air configuration for Gothic Forge v3
+root = "."
+tmp_dir = "./tmp"
+
+[build]
+  cmd = "go build -o ./tmp/server.exe ./cmd/server"
+  bin = "./tmp/server.exe"
+  full_bin = true
+  include_ext = ["go", "templ", "css", "html"]
+  exclude_dir = [".git", "tmp", "dist"]
+  delay = 100
+
+[log]
+  time = false
+
+[color]
+  main = "yellow"
+  watcher = "cyan"
+  build = "green"

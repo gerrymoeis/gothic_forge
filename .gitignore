@@ -1,0 +1,52 @@
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Binaries and build folders
+bin/
+dist/
+build/
+
+# Air temp directory
+/tmp/
+tmp/
+
+# IDE/editor settings
+.vscode/
+.idea/
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node (not used, but ignore if present)
+node_modules/
+
+# Generated CSS (built by gotailwindcss)
+app/styles/output.css
+
+# Coverage
+coverage.out
+
+# Local environment files (keep .env.example tracked)
+.env
+.env.*
+!.env.example
+
+# Built CLI/server binaries in repo root (cross-platform convenience)
+/gforge
+/server
+
+# Logs and profiles
+*.log
+*.prof
+profile.out
+
+# Templ generated files (always re-generated)
+app/templates/*_templ.go

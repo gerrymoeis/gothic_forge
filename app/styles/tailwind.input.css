@@ -1,0 +1,7 @@
+/* Tailwind build input (paired with DaisyUI CDN components)
+   - Built by gotailwindcss in dev to app/styles/output.css
+   - Provides utilities + preflight; DaisyUI CDN provides components
+*/
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

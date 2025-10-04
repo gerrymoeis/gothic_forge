@@ -1,0 +1,44 @@
+version: 2
+project_name: gothic_forge
+
+dist: dist
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: gforge
+    main: ./cmd/gforge
+    binary: gforge
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+  - id: server
+    main: ./cmd/server
+    binary: gothic-forge-server
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+
+archives:
+  - id: archive
+    builds: [gforge, server]
+    format_overrides:
+      - goos: windows
+        format: zip
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: 'snapshot-{{ .ShortCommit }}'
+
+changelog:
+  use: github
+
+release:
+  draft: false
+  prerelease: auto
