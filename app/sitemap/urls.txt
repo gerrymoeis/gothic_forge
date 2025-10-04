@@ -1,0 +1,3 @@
+# Add one path or absolute URL per line.
+# Lines starting with # are ignored.
+/

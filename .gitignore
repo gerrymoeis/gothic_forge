@@ -50,3 +50,7 @@ profile.out
 
 # Templ generated files (always re-generated)
 app/templates/*_templ.go
+
+# Ignore scattered test files outside centralized tests/
+**/*_test.go
+!tests/**/*

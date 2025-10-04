@@ -35,15 +35,15 @@ var doctorCmd = &cobra.Command{
     fmt.Printf("  • gotailwindcss: %s\n", pathOrMissing(gwPath, gwOK))
     if doctorFix {
       if !templOK {
-        if path, err := ensureTool("templ", "github.com/a-h/templ/cmd/templ@latest"); err == nil {
-          templPath, templOK = path, true
-          fmt.Printf("    → installed templ: %s\n", templPath)
+        if installedPath, err := ensureTool("templ", "github.com/a-h/templ/cmd/templ@latest"); err == nil {
+          fmt.Printf("    → installed templ: %s\n", installedPath)
+          templOK = true
         }
       }
       if !gwOK {
-        if path, err := ensureTool("gotailwindcss", "github.com/gotailwindcss/tailwind/cmd/gotailwindcss@latest"); err == nil {
-          gwPath, gwOK = path, true
-          fmt.Printf("    → installed gotailwindcss: %s\n", gwPath)
+        if installedPath, err := ensureTool("gotailwindcss", "github.com/gotailwindcss/tailwind/cmd/gotailwindcss@latest"); err == nil {
+          fmt.Printf("    → installed gotailwindcss: %s\n", installedPath)
+          gwOK = true
         }
       }
     }
@@ -165,6 +165,7 @@ func writeEnvExample(p string) error {
 # App
 APP_ENV=development
 SITE_BASE_URL=http://127.0.0.1:8080
+JWT_SECRET=devsecret-change-me
 
 # Server
 HTTP_HOST=127.0.0.1
@@ -184,6 +185,13 @@ CORS_ORIGINS=
 # Service URLs (populated by deploy or your provider)
 DATABASE_URL=
 VALKEY_URL=
+
+# OAuth (optional)
+# If set, GitHub OAuth login will be enabled at /auth/github/login
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+# Base URL used to compute OAuth callback, defaults to SITE_BASE_URL
+OAUTH_BASE_URL=
 
 # Deploy provider tokens (used by 'gforge deploy')
 RAILWAY_TOKEN=

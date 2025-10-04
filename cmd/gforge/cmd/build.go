@@ -75,7 +75,14 @@ func writeSEOFiles() error {
   if base == "" { base = "/" }
   // normalize base (no trailing slash unless root)
   if base != "/" { base = strings.TrimRight(base, "/") }
-  staticDir := filepath.Join("app", "static")
+  // respect GFORGE_BASEDIR when set (useful for tests)
+  baseDir := strings.TrimSpace(os.Getenv("GFORGE_BASEDIR"))
+  var staticDir string
+  if baseDir != "" {
+    staticDir = filepath.Join(baseDir, "app", "static")
+  } else {
+    staticDir = filepath.Join("app", "static")
+  }
   if err := os.MkdirAll(staticDir, 0o755); err != nil { return err }
 
   // Collect URLs: root + registry from app/sitemap/urls.txt
@@ -124,7 +131,13 @@ func collectSitemapURLs(base string) []string {
   if root == "/" { root = "/" }
   urls = append(urls, root)
   // Extras
-  extra := filepath.Join("app", "sitemap", "urls.txt")
+  baseDir := strings.TrimSpace(os.Getenv("GFORGE_BASEDIR"))
+  var extra string
+  if baseDir != "" {
+    extra = filepath.Join(baseDir, "app", "sitemap", "urls.txt")
+  } else {
+    extra = filepath.Join("app", "sitemap", "urls.txt")
+  }
   if b, err := os.ReadFile(extra); err == nil {
     lines := strings.Split(string(b), "\n")
     for _, ln := range lines {
