@@ -5,6 +5,7 @@ import (
     "fmt"
     "log"
     "net/http"
+    pprof "net/http/pprof"
     "net/url"
     "os"
     "path/filepath"
@@ -170,6 +171,23 @@ func New() *chi.Mux {
 
     // Static assets (CSS/JS/images)
     mountStatic(r)
+
+    // pprof (dev or when enabled): /debug/pprof
+    if env.Get("APP_ENV", "development") == "development" || strings.EqualFold(env.Get("PPROF_ENABLE", ""), "1") {
+        r.Route("/debug/pprof", func(rr chi.Router) {
+            rr.Get("/", pprof.Index)
+            rr.Get("/cmdline", pprof.Cmdline)
+            rr.Get("/profile", pprof.Profile)
+            rr.Post("/symbol", pprof.Symbol)
+            rr.Get("/symbol", pprof.Symbol)
+            rr.Get("/trace", pprof.Trace)
+            rr.Get("/{name}", func(w http.ResponseWriter, req *http.Request) {
+                name := chi.URLParam(req, "name")
+                h := pprof.Handler(name)
+                h.ServeHTTP(w, req)
+            })
+        })
+    }
 
     return r
 }

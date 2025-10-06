@@ -1,6 +1,7 @@
 package routes
 
 import (
+    "context"
     "crypto/tls"
     "fmt"
     "io"
@@ -16,8 +17,10 @@ import (
     "github.com/go-chi/chi/v5"
     "gothicforge3/app/templates"
     redigo "github.com/gomodule/redigo/redis"
+    "gothicforge3/internal/db"
     "gothicforge3/internal/env"
     "gothicforge3/internal/server"
+    "gothicforge3/internal/auth"
 )
 
 // Register mounts all application routes on a chi router.
@@ -27,6 +30,21 @@ func Register(r *chi.Mux) {
         server.Sessions().Put(req.Context(), "count", 0)
         w.Header().Set("Content-Type", "text/html; charset=utf-8")
         _ = templates.Index().Render(req.Context(), w)
+    })
+
+    // dev-only: mint a short-lived JWT and set cookie (gf_jwt)
+    r.Get("/dev/jwt", func(w http.ResponseWriter, req *http.Request) {
+        if strings.EqualFold(env.Get("APP_ENV", "development"), "production") {
+            http.NotFound(w, req)
+            return
+        }
+        sub := strings.TrimSpace(req.URL.Query().Get("sub"))
+        if sub == "" { sub = "dev" }
+        tok, exp, err := auth.Issue(1*time.Hour, map[string]any{"sub": sub, "role": "dev"})
+        if err != nil { http.Error(w, err.Error(), http.StatusInternalServerError); return }
+        auth.SetJWTCookie(w, "gf_jwt", tok, exp)
+        w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+        _, _ = w.Write([]byte("ok\n"))
     })
 
     // Register root for sitemap
@@ -59,16 +77,24 @@ func Register(r *chi.Mux) {
     // readiness (checks external deps when configured)
     r.Get("/readyz", func(w http.ResponseWriter, req *http.Request) {
         w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+        status := http.StatusOK
         // Valkey readiness (optional)
         if err := valkeyPing(); err != nil {
-            w.WriteHeader(http.StatusServiceUnavailable)
+            status = http.StatusServiceUnavailable
             _, _ = w.Write([]byte("valkey: FAIL\n"))
         } else {
             _, _ = w.Write([]byte("valkey: OK|SKIP\n"))
         }
-        // TODO(Phase 2): DB readiness via pgxpool.Ping (if DATABASE_URL configured)
-        // For now, mark DB as SKIP
-        _, _ = w.Write([]byte("db: SKIP\n"))
+        // DB readiness (optional)
+        if skip, err := dbReady(); skip {
+            _, _ = w.Write([]byte("db: SKIP\n"))
+        } else if err != nil {
+            status = http.StatusServiceUnavailable
+            _, _ = w.Write([]byte("db: FAIL\n"))
+        } else {
+            _, _ = w.Write([]byte("db: OK\n"))
+        }
+        if status != http.StatusOK { w.WriteHeader(status) }
     })
 
     // robots.txt (serve from root). If a file exists under app/static, stream it directly; otherwise emit sensible defaults.
@@ -147,6 +173,18 @@ func absBaseURL(req *http.Request) string {
     if req.TLS != nil || strings.EqualFold(req.Header.Get("X-Forwarded-Proto"), "https") { scheme = "https" }
     host := req.Host
     return scheme + "://" + host
+}
+
+// dbReady tries to connect and ping the Postgres database when DATABASE_URL is set.
+// Returns (skip=true) when DATABASE_URL is empty.
+func dbReady() (bool, error) {
+    if strings.TrimSpace(env.Get("DATABASE_URL", "")) == "" {
+        return true, nil
+    }
+    ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+    defer cancel()
+    if err := db.Connect(ctx); err != nil { return false, err }
+    return false, db.Health(ctx)
 }
 
 // valkeyPing attempts to PING a Valkey/Redis instance when configured.

@@ -39,6 +39,8 @@ var exportCmd = &cobra.Command{
 			if templPath, err := ensureTool("templ", "github.com/a-h/templ/cmd/templ@latest"); err == nil {
 				_ = execx.Run(ctx, "templ", templPath, "generate", "-include-version=false", "-include-timestamp=false")
 			}
+			// Ensure DaisyUI plugin/theme exist locally for gotailwindcss build
+			_ = ensureStylesDeps(ctx)
 			if gwPath, err := ensureTool("gotailwindcss", "github.com/gotailwindcss/tailwind/cmd/gotailwindcss@latest"); err == nil {
 				_ = execx.Run(ctx, "gotailwindcss build", gwPath, "build", "-o", "./app/styles/output.css", "./app/styles/tailwind.input.css")
 			}
@@ -147,4 +149,24 @@ func writeCFHeaders(outDir string) error {
     b.WriteString("  Cache-Control: public, max-age=604800, immutable\n")
     path := filepath.Join(outDir, "_headers")
     return os.WriteFile(path, []byte(b.String()), 0o644)
+}
+
+// ensureStylesDeps ensures DaisyUI plugin files and Tailwind input exist.
+func ensureStylesDeps(ctx context.Context) error {
+    dir := filepath.Join("app", "styles")
+    _ = os.MkdirAll(dir, 0o755)
+    daisy := filepath.Join(dir, "daisyui.js")
+    if _, err := os.Stat(daisy); os.IsNotExist(err) {
+        _ = execx.Download(ctx, "https://github.com/saadeghi/daisyui/releases/latest/download/daisyui.js", daisy)
+    }
+    theme := filepath.Join(dir, "daisyui-theme.js")
+    if _, err := os.Stat(theme); os.IsNotExist(err) {
+        _ = execx.Download(ctx, "https://github.com/saadeghi/daisyui/releases/latest/download/daisyui-theme.js", theme)
+    }
+    input := filepath.Join(dir, "tailwind.input.css")
+    if _, err := os.Stat(input); os.IsNotExist(err) {
+        css := "@import \"tailwindcss\" source(none);\n@source \"./app/**/*.{templ,go,html}\";\n@plugin \"./daisyui.js\";\n"
+        _ = os.WriteFile(input, []byte(css), 0o644)
+    }
+    return nil
 }

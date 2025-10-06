@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"github.com/spf13/cobra"
 	"gothicforge3/internal/execx"
 )
@@ -38,5 +37,4 @@ func init() {
 	modCmd.AddCommand(modTidyCmd)
 	modCmd.AddCommand(modDownloadCmd)
 	rootCmd.AddCommand(modCmd)
-	fmt.Sprintf("") // avoid unused import in some builds
 }

@@ -12,7 +12,7 @@ var (
 
 var genCmd = &cobra.Command{
   Use:   "gen",
-  Short: "Scaffold in app/ (page/component)",
+  Short: "Scaffold in app/ (page/component) — alias of 'add'",
   RunE: func(cmd *cobra.Command, args []string) error {
     banner()
     if genPage == "" && genComponent == "" {
@@ -20,10 +20,12 @@ var genCmd = &cobra.Command{
       return nil
     }
     if genPage != "" {
-      fmt.Printf("Scaffold page: %s (app/templates)\n", genPage)
+      if !isValidName(genPage) { return fmt.Errorf("invalid page name: %s", genPage) }
+      if err := scaffoldPage(genPage); err != nil { return err }
     }
     if genComponent != "" {
-      fmt.Printf("Scaffold component: %s (app/templates)\n", genComponent)
+      if !isValidName(genComponent) { return fmt.Errorf("invalid component name: %s", genComponent) }
+      if err := scaffoldComponent(genComponent); err != nil { return err }
     }
     return nil
   },

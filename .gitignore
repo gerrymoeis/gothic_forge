@@ -31,6 +31,10 @@ node_modules/
 # Generated CSS (built by gotailwindcss)
 app/styles/output.css
 
+# DaisyUI plugin (fetched by CLI)
+app/styles/daisyui.js
+app/styles/daisyui-theme.js
+
 # Coverage
 coverage.out
 

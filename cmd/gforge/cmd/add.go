@@ -2,9 +2,11 @@ package cmd
 
 import (
     "fmt"
+    "os"
     "path/filepath"
     "regexp"
     "strings"
+    "time"
 
     "gothicforge3/internal/execx"
     "github.com/spf13/cobra"
@@ -12,13 +14,13 @@ import (
 
 var addCmd = &cobra.Command{
     Use:   "add",
-    Short: "Scaffold features in app/ (page, component, auth, oauth, db, module)",
+    Short: "Scaffold features in app/ (page, component, auth, oauth, db, module, resource)",
     Args:  cobra.MinimumNArgs(1),
     RunE: func(cmd *cobra.Command, args []string) error {
         banner()
         kind := strings.ToLower(args[0])
         var name string
-        if kind == "page" || kind == "component" || kind == "oauth" || kind == "db" || kind == "module" || kind == "crud" {
+        if kind == "page" || kind == "component" || kind == "oauth" || kind == "db" || kind == "module" || kind == "crud" || kind == "resource" || kind == "migration" || kind == "cruddb" {
             if len(args) < 2 {
                 fmt.Println("Usage:")
                 fmt.Println("  gforge add page <name>")
@@ -28,6 +30,9 @@ var addCmd = &cobra.Command{
                 fmt.Println("  gforge add db <name>")
                 fmt.Println("  gforge add module <name>")
                 fmt.Println("  gforge add crud <name>")
+                fmt.Println("  gforge add resource <Name> <field:type> [field:type ...]")
+                fmt.Println("  gforge add migration <name>")
+                fmt.Println("  gforge add cruddb <Name> <field:type> [field:type ...]")
                 return nil
             }
             name = args[1]
@@ -50,6 +55,16 @@ var addCmd = &cobra.Command{
             return scaffoldModule(name)
         case "crud":
             return scaffoldCRUD(name)
+        case "resource":
+            fields := []string{}
+            if len(args) > 2 { fields = args[2:] }
+            return scaffoldResource(name, fields)
+        case "migration":
+            return scaffoldMigration(name)
+        case "cruddb":
+            fields := []string{}
+            if len(args) > 2 { fields = args[2:] }
+            return scaffoldCRUDDB(name, fields)
         default:
             fmt.Println("Usage:")
             fmt.Println("  gforge add page <name>")
@@ -59,6 +74,9 @@ var addCmd = &cobra.Command{
             fmt.Println("  gforge add db <name>")
             fmt.Println("  gforge add module <name>")
             fmt.Println("  gforge add crud <name>")
+            fmt.Println("  gforge add resource <Name> <field:type> [field:type ...]")
+            fmt.Println("  gforge add migration <name>")
+            fmt.Println("  gforge add cruddb <Name> <field:type> [field:type ...]")
             return nil
         }
     },
@@ -94,6 +112,350 @@ func init() {
     if err := execx.WriteFileIfMissing(routePath, []byte(routeSrc), 0o644); err != nil { return err }
     fmt.Printf("Added OAuth placeholder: /oauth/%s/start, /oauth/%s/callback\n", keb, keb)
     fmt.Printf("  - %s\n", routePath)
+    return nil
+}
+
+// dbFieldDesc describes a DB field for scaffolding.
+type dbFieldDesc struct { Name, SQLType, GoName string }
+
+// scaffoldCRUDDB generates a DB-backed CRUD feature under /db/<plural> using pgxpool and internal/db.
+// Example: gforge add cruddb Post title:string body:text
+func scaffoldCRUDDB(name string, fields []string) error {
+    if len(fields) == 0 {
+        return fmt.Errorf("cruddb requires at least one <field:type>")
+    }
+    keb := kebabCase(name)
+    pas := pascalCase(name)
+    plural := strings.ToLower(keb) + "s"
+    table := plural
+
+    fds := make([]dbFieldDesc, 0, len(fields))
+    for _, f := range fields {
+        parts := strings.SplitN(strings.TrimSpace(f), ":", 2)
+        if parts[0] == "" { continue }
+        nm := strings.ToLower(parts[0])
+        tp := "text"
+        if len(parts) == 2 {
+            switch strings.ToLower(strings.TrimSpace(parts[1])) {
+            case "string", "text": tp = "text"
+            case "int", "integer": tp = "integer"
+            case "bigint": tp = "bigint"
+            case "bool", "boolean": tp = "boolean"
+            case "float", "double", "doubleprecision": tp = "double precision"
+            case "date": tp = "date"
+            case "timestamp", "timestamptz": tp = "timestamptz"
+            default: tp = "text"
+            }
+        }
+        fds = append(fds, dbFieldDesc{Name: nm, SQLType: tp, GoName: pascalCase(nm)})
+    }
+
+    // 1) Migration
+    cols := make([]string, 0, len(fds)+3)
+    cols = append(cols, "  id bigserial PRIMARY KEY")
+    for _, fd := range fds { cols = append(cols, fmt.Sprintf("  %s %s NOT NULL", fd.Name, fd.SQLType)) }
+    cols = append(cols, "  created_at timestamptz DEFAULT now()")
+    cols = append(cols, "  updated_at timestamptz DEFAULT now()")
+    up := fmt.Sprintf("CREATE TABLE %s (\n%s\n);\n", table, strings.Join(cols, ",\n"))
+    down := fmt.Sprintf("DROP TABLE IF EXISTS %s;\n", table)
+    mig := fmt.Sprintf("-- +goose Up\n%s\n-- +goose Down\n%s", up, down)
+    mdir := filepath.Join("app", "db", "migrations")
+    if err := os.MkdirAll(mdir, 0o755); err != nil { return err }
+    ts := time.Now().UTC().Format("20060102150405")
+    mfile := filepath.Join(mdir, fmt.Sprintf("%s_create_%s.sql", ts, table))
+    if err := os.WriteFile(mfile, []byte(mig), 0o644); err != nil { return err }
+
+    // 2) Template
+    // Struct fields
+    var structBuf strings.Builder
+    for _, fd := range fds { structBuf.WriteString(fmt.Sprintf("  %s string\n", fd.GoName)) }
+    // Form controls
+    var formBuf strings.Builder
+    for _, fd := range fds {
+        label := fd.GoName
+        if fd.SQLType == "text" && (fd.Name == "body" || fd.Name == "description" || fd.Name == "content") {
+            formBuf.WriteString(fmt.Sprintf("        _, _ = io.WriteString(w, \"<label class=\\\"form-control\\\"><span class=\\\"label-text\\\">%s</span><textarea class=\\\"textarea textarea-bordered\\\" name=\\\"%s\\\">\" + item.%s + \"</textarea></label>\")\n", label, fd.Name, fd.GoName))
+        } else if fd.SQLType == "text" {
+            formBuf.WriteString(fmt.Sprintf("        _, _ = io.WriteString(w, \"<label class=\\\"form-control\\\"><span class=\\\"label-text\\\">%s</span><textarea class=\\\"textarea textarea-bordered\\\" name=\\\"%s\\\">\" + item.%s + \"</textarea></label>\")\n", label, fd.Name, fd.GoName))
+        } else {
+            formBuf.WriteString(fmt.Sprintf("        _, _ = io.WriteString(w, \"<label class=\\\"form-control\\\"><span class=\\\"label-text\\\">%s</span><input class=\\\"input input-bordered\\\" name=\\\"%s\\\" value=\\\"\" + item.%s + \"\\\" required></label>\")\n", label, fd.Name, fd.GoName))
+        }
+    }
+    // List link text uses first field
+    displayField := fds[0].GoName
+    tmplPath := filepath.Join("app", "templates", fmt.Sprintf("db_%s.go", table))
+    tmplSrc := fmt.Sprintf(`package templates
+
+import (
+  "context"
+  "io"
+  templ "github.com/a-h/templ"
+)
+
+type DB%[1]sItem struct {
+  ID int64
+%[2]s  CreatedAt string
+}
+
+// fmtInt helper
+func fmtInt(v int64) string { if v==0 { return "0" }; neg:=v<0; if neg { v=-v }; var b [20]byte; i:=len(b); for v>0 { i--; b[i]=byte('0'+v%%10); v/=10 }; if neg { i--; b[i]='-'}; return string(b[i:]) }
+
+func DB%[1]sList(items []DB%[1]sItem) templ.Component {
+  body := templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+    _, _ = io.WriteString(w, "<section class=\"mx-auto max-w-6xl p-4\">")
+    _, _ = io.WriteString(w, "<div class=\"flex justify-between items-center mb-4\"><h2 class=\"text-2xl font-bold\">%[3]s</h2><a class=\"btn btn-primary\" href=\"/db/%[4]s/new\">New</a></div>")
+    _, _ = io.WriteString(w, "<div class=\"card bg-base-200/60 border border-white/10 rounded-box shadow-xl ring-1 ring-white/10\"><div class=\"card-body\">")
+    if len(items) == 0 {
+      _, _ = io.WriteString(w, "<p class=\"opacity-80\">No items yet.</p>")
+    } else {
+      _, _ = io.WriteString(w, "<ul class=\"menu\">")
+      for _, it := range items {
+        _, _ = io.WriteString(w, "<li><a href=\"/db/%[4]s/" +  fmtInt(it.ID) + "/edit\">" + it.%[5]s + "</a></li>")
+      }
+      _, _ = io.WriteString(w, "</ul>")
+    }
+    _, _ = io.WriteString(w, "</div></div></section>")
+    return nil
+  })
+  return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error { return LayoutSEO(SEO{Title: "%[3]s", Description: "%[3]s list", Canonical: "/db/%[4]s"}).Render(templ.WithChildren(ctx, body), w) })
+}
+
+func DB%[1]sForm(action string, item *DB%[1]sItem, submit string) templ.Component {
+  if item == nil { item = &DB%[1]sItem{} }
+  body := templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+    _, _ = io.WriteString(w, "<section class=\"mx-auto max-w-xl p-4\"><div class=\"card bg-base-200/60 border border-white/10 rounded-box shadow-xl ring-1 ring-white/10\"><div class=\"card-body\">")
+    _, _ = io.WriteString(w, "<h2 class=\"card-title\">%[3]s</h2>")
+    _, _ = io.WriteString(w, "<form method=\"post\" action=\"" + action + "\" class=\"grid gap-3\">")
+%[6]s    _, _ = io.WriteString(w, "<button class=\"btn btn-primary\" type=\"submit\">" + submit + "</button>")
+    _, _ = io.WriteString(w, "</form></div></div></section>")
+    return nil
+  })
+  return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error { return LayoutSEO(SEO{Title: "%[3]s", Description: "%[3]s form", Canonical: "/db/%[4]s/new"}).Render(templ.WithChildren(ctx, body), w) })
+}
+`, pas, structBuf.String(), pas, table, displayField, formBuf.String())
+    if err := execx.WriteFileIfMissing(tmplPath, []byte(tmplSrc), 0o644); err != nil { return err }
+
+    // 3) Routes
+    // Build INSERT/UPDATE SQL pieces
+    colNames := make([]string, 0, len(fds))
+    valExprs := make([]string, 0, len(fds))
+    setExprs := make([]string, 0, len(fds))
+    for i, fd := range fds {
+        colNames = append(colNames, fd.Name)
+        p := fmt.Sprintf("$%d", i+1)
+        if fd.SQLType == "text" {
+            valExprs = append(valExprs, p)
+            setExprs = append(setExprs, fmt.Sprintf("%s=%s", fd.Name, p))
+        } else {
+            valExprs = append(valExprs, fmt.Sprintf("CAST(%s AS %s)", p, fd.SQLType))
+            setExprs = append(setExprs, fmt.Sprintf("%s=CAST(%s AS %s)", fd.Name, p, fd.SQLType))
+        }
+    }
+    // List scan targets (ID + first field)
+    var listSelect, listScan string
+    if len(fds) > 0 {
+        listSelect = fmt.Sprintf("id, (%s)::text, to_char(created_at, 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')", fds[0].Name)
+        listScan = fmt.Sprintf("&it.ID, &it.%s, &it.CreatedAt", fds[0].GoName)
+    } else {
+        listSelect = "id, to_char(created_at, 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')"
+        listScan = "&it.ID, &it.CreatedAt"
+    }
+    // Edit select and scan (all fields as text)
+    selCols := make([]string, 0, len(fds))
+    scanTargets := make([]string, 0, len(fds))
+    for _, fd := range fds {
+        selCols = append(selCols, fmt.Sprintf("(%s)::text", fd.Name))
+        scanTargets = append(scanTargets, fmt.Sprintf("&it.%s", fd.GoName))
+    }
+    editSelect := fmt.Sprintf("id, %s, to_char(created_at, 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')", strings.Join(selCols, ", "))
+    editScan := fmt.Sprintf("&it.ID, %s, &it.CreatedAt", strings.Join(scanTargets, ", "))
+
+    routePath := filepath.Join("app", "routes", fmt.Sprintf("db_%s.go", table))
+    routeSrc := fmt.Sprintf(`package routes
+
+import (
+  "context"
+  "net/http"
+  "strconv"
+  "time"
+
+  "github.com/go-chi/chi/v5"
+  "gothicforge3/app/templates"
+  "gothicforge3/internal/auth"
+  "gothicforge3/internal/db"
+  "gothicforge3/internal/env"
+)
+
+func init() {
+  RegisterRoute(func(r chi.Router) {
+    // List
+    r.Get("/db/%[4]s", func(w http.ResponseWriter, req *http.Request) {
+      w.Header().Set("Content-Type", "text/html; charset=utf-8")
+      if env.Get("DATABASE_URL", "") == "" { http.Error(w, "database not configured", http.StatusServiceUnavailable); return }
+      ctx, cancel := context.WithTimeout(req.Context(), 5*time.Second); defer cancel()
+      if err := db.Connect(ctx); err != nil { http.Error(w, err.Error(), http.StatusInternalServerError); return }
+      rows, err := db.Pool().Query(req.Context(), "SELECT %[6]s FROM %[3]s ORDER BY id DESC LIMIT 50")
+      if err != nil { http.Error(w, err.Error(), http.StatusInternalServerError); return }
+      defer rows.Close()
+      list := make([]templates.DB%[1]sItem, 0, 32)
+      for rows.Next() {
+        var it templates.DB%[1]sItem
+        if err := rows.Scan(%[7]s); err != nil { http.Error(w, err.Error(), http.StatusInternalServerError); return }
+        list = append(list, it)
+      }
+      _ = templates.DB%[1]sList(list).Render(req.Context(), w)
+    })
+
+    // New form
+    r.Get("/db/%[4]s/new", func(w http.ResponseWriter, req *http.Request) {
+      w.Header().Set("Content-Type", "text/html; charset=utf-8")
+      _ = templates.DB%[1]sForm("/db/%[4]s", nil, "Create").Render(req.Context(), w)
+    })
+
+    // Create
+    r.Post("/db/%[4]s", func(w http.ResponseWriter, req *http.Request) {
+      if _, err := auth.ReadAndVerifyCookie(req, "gf_jwt"); err != nil { http.Error(w, "unauthorized", http.StatusUnauthorized); return }
+      if env.Get("DATABASE_URL", "") == "" { http.Error(w, "database not configured", http.StatusServiceUnavailable); return }
+      ctx, cancel := context.WithTimeout(req.Context(), 5*time.Second); defer cancel()
+      if err := db.Connect(ctx); err != nil { http.Error(w, err.Error(), http.StatusInternalServerError); return }
+      _ = req.ParseForm()
+%[8]s      if _, err := db.Pool().Exec(req.Context(), "INSERT INTO %[3]s (%[9]s) VALUES (%[10]s)", %[11]s); err != nil { http.Error(w, err.Error(), http.StatusInternalServerError); return }
+      http.Redirect(w, req, "/db/%[4]s", http.StatusSeeOther)
+    })
+
+    // Edit form
+    r.Get("/db/%[4]s/{id}/edit", func(w http.ResponseWriter, req *http.Request) {
+      w.Header().Set("Content-Type", "text/html; charset=utf-8")
+      if env.Get("DATABASE_URL", "") == "" { http.Error(w, "database not configured", http.StatusServiceUnavailable); return }
+      ctx, cancel := context.WithTimeout(req.Context(), 5*time.Second); defer cancel()
+      if err := db.Connect(ctx); err != nil { http.Error(w, err.Error(), http.StatusInternalServerError); return }
+      id, _ := strconv.ParseInt(chi.URLParam(req, "id"), 10, 64)
+      row := db.Pool().QueryRow(req.Context(), "SELECT %[12]s FROM %[3]s WHERE id=$1", id)
+      var it templates.DB%[1]sItem
+      if err := row.Scan(%[13]s); err != nil { http.NotFound(w, req); return }
+      _ = templates.DB%[1]sForm("/db/%[4]s/"+strconv.FormatInt(id,10), &it, "Update").Render(req.Context(), w)
+    })
+
+    // Update
+    r.Post("/db/%[4]s/{id}", func(w http.ResponseWriter, req *http.Request) {
+      if _, err := auth.ReadAndVerifyCookie(req, "gf_jwt"); err != nil { http.Error(w, "unauthorized", http.StatusUnauthorized); return }
+      if env.Get("DATABASE_URL", "") == "" { http.Error(w, "database not configured", http.StatusServiceUnavailable); return }
+      ctx, cancel := context.WithTimeout(req.Context(), 5*time.Second); defer cancel()
+      if err := db.Connect(ctx); err != nil { http.Error(w, err.Error(), http.StatusInternalServerError); return }
+      _ = req.ParseForm()
+      id, _ := strconv.ParseInt(chi.URLParam(req, "id"), 10, 64)
+%[14]s      if _, err := db.Pool().Exec(req.Context(), "UPDATE %[3]s SET %[15]s, updated_at=now() WHERE id=$%[16]d", %[17]s, id); err != nil { http.Error(w, err.Error(), http.StatusInternalServerError); return }
+      http.Redirect(w, req, "/db/%[4]s", http.StatusSeeOther)
+    })
+
+    // Delete
+    r.Post("/db/%[4]s/{id}/delete", func(w http.ResponseWriter, req *http.Request) {
+      if _, err := auth.ReadAndVerifyCookie(req, "gf_jwt"); err != nil { http.Error(w, "unauthorized", http.StatusUnauthorized); return }
+      if env.Get("DATABASE_URL", "") == "" { http.Error(w, "database not configured", http.StatusServiceUnavailable); return }
+      ctx, cancel := context.WithTimeout(req.Context(), 5*time.Second); defer cancel()
+      if err := db.Connect(ctx); err != nil { http.Error(w, err.Error(), http.StatusInternalServerError); return }
+      id, _ := strconv.ParseInt(chi.URLParam(req, "id"), 10, 64)
+      if _, err := db.Pool().Exec(req.Context(), "DELETE FROM %[3]s WHERE id=$1", id); err != nil { http.Error(w, err.Error(), http.StatusInternalServerError); return }
+      http.Redirect(w, req, "/db/%[4]s", http.StatusSeeOther)
+    })
+
+    RegisterURL("/db/%[4]s")
+  })
+}
+`, pas, keb, table, plural, displayField,
+        listSelect, listScan,
+        buildFormRead(fds),
+        strings.Join(colNames, ", "), strings.Join(valExprs, ", "), strings.Join(formArgList(fds), ", "),
+        editSelect, editScan,
+        buildFormRead(fds), strings.Join(setExprs, ", "), len(fds)+1, strings.Join(formArgList(fds), ", "))
+    if err := execx.WriteFileIfMissing(routePath, []byte(routeSrc), 0o644); err != nil { return err }
+
+    fmt.Printf("Added DB CRUD: /db/%s (migration + routes + templates)\n", table)
+    fmt.Printf("  - %s\n", mfile)
+    fmt.Printf("  - %s\n", tmplPath)
+    fmt.Printf("  - %s\n", routePath)
+    return nil
+}
+
+func buildFormRead(fds []dbFieldDesc) string {
+    if len(fds) == 0 { return "" }
+    var b strings.Builder
+    for _, fd := range fds {
+        b.WriteString(fmt.Sprintf("      %s := req.FormValue(\"%s\")\n", fd.Name, fd.Name))
+    }
+    return b.String()
+}
+
+func formArgList(fds []dbFieldDesc) []string {
+    out := make([]string, 0, len(fds))
+    for _, fd := range fds { out = append(out, fd.Name) }
+    return out
+}
+
+// scaffoldMigration creates a timestamped goose SQL migration file.
+// Example: gforge add migration create_posts
+func scaffoldMigration(name string) error {
+    keb := kebabCase(name)
+    dir := filepath.Join("app", "db", "migrations")
+    if err := os.MkdirAll(dir, 0o755); err != nil { return err }
+    ts := time.Now().UTC().Format("20060102150405")
+    file := filepath.Join(dir, fmt.Sprintf("%s_%s.sql", ts, keb))
+    content := "-- +goose Up\n-- Write your UP migration here\n\n-- +goose Down\n-- Write your DOWN migration here\n"
+    if err := os.WriteFile(file, []byte(content), 0o644); err != nil { return err }
+    fmt.Printf("Added migration: %s\n", filepath.Base(file))
+    fmt.Printf("  - %s\n", file)
+    return nil
+}
+
+// scaffoldResource creates a page and a timestamped SQL migration for a basic resource.
+// Example: gforge add resource Post title:string body:text
+func scaffoldResource(name string, fields []string) error {
+    // Page and route
+    if err := scaffoldPage(name); err != nil { return err }
+
+    // Migration skeleton for Phase 2 (goose-style markers)
+    keb := kebabCase(name)
+    table := strings.ToLower(keb) + "s" // naive pluralization
+    cols := make([]string, 0, len(fields))
+    for _, f := range fields {
+        f = strings.TrimSpace(f)
+        if f == "" { continue }
+        parts := strings.SplitN(f, ":", 2)
+        col := strings.ToLower(parts[0])
+        typ := "text"
+        if len(parts) == 2 {
+            switch strings.ToLower(strings.TrimSpace(parts[1])) {
+            case "string", "text": typ = "text"
+            case "int", "integer": typ = "integer"
+            case "bigint": typ = "bigint"
+            case "bool", "boolean": typ = "boolean"
+            case "float", "double", "doubleprecision": typ = "double precision"
+            case "date": typ = "date"
+            case "timestamp", "timestamptz": typ = "timestamptz"
+            default: typ = "text"
+            }
+        }
+        cols = append(cols, fmt.Sprintf("  %s %s NOT NULL", col, typ))
+    }
+    // Core columns
+    prelude := []string{
+        "  id bigserial PRIMARY KEY",
+        "  created_at timestamptz DEFAULT now()",
+        "  updated_at timestamptz DEFAULT now()",
+    }
+    body := strings.Join(append(prelude, cols...), ",\n")
+    up := fmt.Sprintf("CREATE TABLE %s (\n%s\n);\n", table, body)
+    down := fmt.Sprintf("DROP TABLE IF EXISTS %s;\n", table)
+    sql := fmt.Sprintf("-- +goose Up\n%s\n-- +goose Down\n%s", up, down)
+
+    // Write file under app/db/migrations
+    dir := filepath.Join("app", "db", "migrations")
+    if err := os.MkdirAll(dir, 0o755); err != nil { return err }
+    ts := time.Now().UTC().Format("20060102150405")
+    file := filepath.Join(dir, fmt.Sprintf("%s_create_%s.sql", ts, table))
+    if err := os.WriteFile(file, []byte(sql), 0o644); err != nil { return err }
+    fmt.Printf("Added resource: /%s (page) + migration %s\n", keb, filepath.Base(file))
+    fmt.Printf("  - %s\n", file)
     return nil
 }
 
