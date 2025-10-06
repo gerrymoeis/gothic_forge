@@ -1,9 +1,11 @@
 package routes
 
 import (
+    "crypto/tls"
     "fmt"
     "io"
     "net/http"
+    "net/url"
     "os"
     "path/filepath"
     "sort"
@@ -13,45 +15,63 @@ import (
 
     "github.com/go-chi/chi/v5"
     "gothicforge3/app/templates"
+    redigo "github.com/gomodule/redigo/redis"
     "gothicforge3/internal/env"
     "gothicforge3/internal/server"
 )
 
 // Register mounts all application routes on a chi router.
 func Register(r *chi.Mux) {
-	// Home
-	r.Get("/", func(w http.ResponseWriter, req *http.Request) {
-		server.Sessions().Put(req.Context(), "count", 0)
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_ = templates.Index().Render(req.Context(), w)
-	})
+    // Home
+    r.Get("/", func(w http.ResponseWriter, req *http.Request) {
+        server.Sessions().Put(req.Context(), "count", 0)
+        w.Header().Set("Content-Type", "text/html; charset=utf-8")
+        _ = templates.Index().Render(req.Context(), w)
+    })
 
-	// Register root for sitemap
-	RegisterURL("/")
+    // Register root for sitemap
+    RegisterURL("/")
 
-	// Counter sync (HTMX): accepts a count and returns the server stat fragment
-	r.Post("/counter/sync", func(w http.ResponseWriter, req *http.Request) {
-		if err := req.ParseForm(); err != nil {
-			http.Error(w, "bad request", http.StatusBadRequest)
-			return
-		}
-		v := strings.TrimSpace(req.FormValue("count"))
-		n, err := strconv.Atoi(v)
-		if err != nil { n = 0 }
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		_, _ = w.Write([]byte(strconv.Itoa(n)))
-	})
+    // Counter sync (HTMX): accepts a count and returns the server stat fragment
+    r.Post("/counter/sync", func(w http.ResponseWriter, req *http.Request) {
+        if err := req.ParseForm(); err != nil {
+            http.Error(w, "bad request", http.StatusBadRequest)
+            return
+        }
+        v := strings.TrimSpace(req.FormValue("count"))
+        n, err := strconv.Atoi(v)
+        if err != nil { n = 0 }
+        w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+        _, _ = w.Write([]byte(strconv.Itoa(n)))
+    })
 
-	// favicon redirect
-	r.Get("/favicon.ico", func(w http.ResponseWriter, req *http.Request) {
-		http.Redirect(w, req, "/static/favicon.svg", http.StatusMovedPermanently)
-	})
-	// health
-	r.Get("/healthz", func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		_, _ = w.Write([]byte("ok"))
-	})
-	    // robots.txt (serve from root). If a file exists under app/static, stream it directly; otherwise emit sensible defaults.
+    // favicon redirect
+    r.Get("/favicon.ico", func(w http.ResponseWriter, req *http.Request) {
+        http.Redirect(w, req, "/static/favicon.svg", http.StatusMovedPermanently)
+    })
+
+    // health
+    r.Get("/healthz", func(w http.ResponseWriter, req *http.Request) {
+        w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+        _, _ = w.Write([]byte("ok"))
+    })
+
+    // readiness (checks external deps when configured)
+    r.Get("/readyz", func(w http.ResponseWriter, req *http.Request) {
+        w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+        // Valkey readiness (optional)
+        if err := valkeyPing(); err != nil {
+            w.WriteHeader(http.StatusServiceUnavailable)
+            _, _ = w.Write([]byte("valkey: FAIL\n"))
+        } else {
+            _, _ = w.Write([]byte("valkey: OK|SKIP\n"))
+        }
+        // TODO(Phase 2): DB readiness via pgxpool.Ping (if DATABASE_URL configured)
+        // For now, mark DB as SKIP
+        _, _ = w.Write([]byte("db: SKIP\n"))
+    })
+
+    // robots.txt (serve from root). If a file exists under app/static, stream it directly; otherwise emit sensible defaults.
     r.Get("/robots.txt", func(w http.ResponseWriter, req *http.Request) {
         p := filepath.Join("app", "static", "robots.txt")
         if f, err := os.Open(p); err == nil {
@@ -71,7 +91,7 @@ func Register(r *chi.Mux) {
         _, _ = w.Write([]byte(b.String()))
     })
 
-	    // sitemap.xml (serve from root). If a file exists, stream it; else emit a minimal but valid sitemap with absolute URLs.
+    // sitemap.xml (serve from root). If a file exists, stream it; else emit a minimal but valid sitemap with absolute URLs.
     r.Get("/sitemap.xml", func(w http.ResponseWriter, req *http.Request) {
         p := filepath.Join("app", "static", "sitemap.xml")
         if f, err := os.Open(p); err == nil {
@@ -113,8 +133,8 @@ func Register(r *chi.Mux) {
         _, _ = w.Write([]byte(b.String()))
     })
 
-	// apply additional registrars
-	applyRegistrars(r)
+    // apply additional registrars
+    applyRegistrars(r)
 }
 
 // absBaseURL returns SITE_BASE_URL if provided (normalized), otherwise derives from request scheme/host.
@@ -127,4 +147,41 @@ func absBaseURL(req *http.Request) string {
     if req.TLS != nil || strings.EqualFold(req.Header.Get("X-Forwarded-Proto"), "https") { scheme = "https" }
     host := req.Host
     return scheme + "://" + host
+}
+
+// valkeyPing attempts to PING a Valkey/Redis instance when configured.
+// It returns nil if VALKEY_URL/REDIS_URL is empty (treated as SKIP) or if PING succeeds.
+// It returns an error only when a URL is configured but PING fails.
+func valkeyPing() error {
+    ru := strings.TrimSpace(env.Get("VALKEY_URL", ""))
+    if ru == "" { ru = strings.TrimSpace(env.Get("REDIS_URL", "")) }
+    if ru == "" { return nil } // not configured → skip is OK
+    skipVerify := strings.EqualFold(strings.TrimSpace(env.Get("VALKEY_TLS_SKIP_VERIFY", "")), "1")
+    u, perr := url.Parse(ru)
+    var c redigo.Conn
+    var err error
+    if perr == nil {
+        scheme := strings.ToLower(u.Scheme)
+        if scheme == "rediss" || skipVerify {
+            opts := []redigo.DialOption{}
+            if u.User != nil {
+                if pw, ok := u.User.Password(); ok { opts = append(opts, redigo.DialPassword(pw)) }
+            }
+            if dbStr := strings.TrimPrefix(u.Path, "/"); dbStr != "" {
+                if n, e := strconv.Atoi(dbStr); e == nil { opts = append(opts, redigo.DialDatabase(n)) }
+            }
+            opts = append(opts, redigo.DialUseTLS(true))
+            if skipVerify { opts = append(opts, redigo.DialTLSConfig(&tls.Config{InsecureSkipVerify: true})) }
+            host := u.Host
+            c, err = redigo.Dial("tcp", host, opts...)
+        } else {
+            c, err = redigo.DialURL(ru)
+        }
+    } else {
+        c, err = redigo.DialURL(ru)
+    }
+    if err != nil { return err }
+    defer c.Close()
+    _, err = c.Do("PING")
+    return err
 }

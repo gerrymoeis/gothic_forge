@@ -23,7 +23,7 @@ server‑side rendering, and a fast developer experience with hot reload.
   session cookies (`scs`), CSP, and optional CSRF in production.
 - **SSR with Templ**: Components in `app/templates/` rendered on the server.
 - **Pure Go Tailwind CSS**: No Node required. `gotailwindcss` produces `app/styles/output.css` from
-  `app/static/tailwind.input.css` (or your inputs).
+  `app/styles/tailwind.input.css` (or your inputs).
 - **Hot reload**: `gforge dev` runs Templ generation/watch, Tailwind build/rebuild, and reloads the server.
 - **SEO basics**: Favicon, meta tags (Open Graph, Twitter), `/robots.txt` and `/sitemap.xml`; JSON‑LD via `LayoutSEO`.
 - **Clean routing**: `app/routes/routes.go` mounts core routes; per‑page registrars via `RegisterRoute`.
@@ -68,6 +68,7 @@ go run ./cmd/gforge build
 - `/favicon.ico` — 301 → `/static/favicon.svg`
 - `/robots.txt` — Defaults or stream `app/static/robots.txt`
 - `/sitemap.xml` — Defaults or stream `app/static/sitemap.xml`
+- `/readyz` — Readiness (Valkey optional; DB added in Phase 2)
 - `/static/*` — Files under `app/static`
 - `/static/styles/*` — Files under `app/styles`
 
