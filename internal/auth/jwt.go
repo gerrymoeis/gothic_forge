@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -33,6 +34,11 @@ func Issue(ttl time.Duration, claims map[string]any) (string, time.Time, error) 
 		"iat": time.Now().Unix(),
 	}
 	for k, v := range claims {
+		if k == "sub" {
+			if _, ok := v.(string); !ok {
+				v = fmt.Sprint(v)
+			}
+		}
 		std[k] = v
 	}
 	_, t, err := ta.Encode(std)

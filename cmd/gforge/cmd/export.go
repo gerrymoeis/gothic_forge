@@ -16,6 +16,7 @@ import (
 	"gothicforge3/internal/execx"
 	"gothicforge3/internal/server"
 )
+
 var (
 	exportOut string
 )
@@ -27,6 +28,11 @@ var exportCmd = &cobra.Command{
 		banner()
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
+
+		// Ensure SEO files (sitemap.xml, robots.txt) exist prior to copy
+		if err := writeSEOFiles(); err != nil {
+			fmt.Printf("seo files generation warning: %v\n", err)
+		}
 
 		// Ensure Templ + CSS are fresh unless skipped for tests/CI
 		if os.Getenv("GFORGE_SKIP_TOOLS") == "" {

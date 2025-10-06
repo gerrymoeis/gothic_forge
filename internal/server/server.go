@@ -1,9 +1,11 @@
 package server
 
 import (
+    "crypto/tls"
     "fmt"
     "log"
     "net/http"
+    "net/url"
     "os"
     "path/filepath"
     "strconv"
@@ -82,10 +84,38 @@ func New() *chi.Mux {
         ru = strings.TrimSpace(env.Get("REDIS_URL", ""))
     }
     if ru != "" {
+        // Support TLS (rediss://) and optional skip-verify via VALKEY_TLS_SKIP_VERIFY=1
+        skipVerify := strings.EqualFold(strings.TrimSpace(env.Get("VALKEY_TLS_SKIP_VERIFY", "")), "1")
+        u, perr := url.Parse(ru)
         pool := &redigo.Pool{
             MaxIdle:     4,
             IdleTimeout: 300 * time.Second,
             Dial: func() (redigo.Conn, error) {
+                if perr == nil {
+                    // If we need custom TLS config or scheme is non-rediss, compose Dial options
+                    scheme := strings.ToLower(u.Scheme)
+                    if scheme == "rediss" || skipVerify {
+                        opts := []redigo.DialOption{}
+                        // Password
+                        if u.User != nil {
+                            if pw, ok := u.User.Password(); ok { opts = append(opts, redigo.DialPassword(pw)) }
+                        }
+                        // Database index from path (e.g., /0)
+                        if dbStr := strings.TrimPrefix(u.Path, "/"); dbStr != "" {
+                            if n, err := strconv.Atoi(dbStr); err == nil { opts = append(opts, redigo.DialDatabase(n)) }
+                        }
+                        // TLS settings
+                        if scheme == "rediss" || skipVerify {
+                            opts = append(opts, redigo.DialUseTLS(true))
+                            if skipVerify {
+                                opts = append(opts, redigo.DialTLSConfig(&tls.Config{InsecureSkipVerify: true}))
+                            }
+                        }
+                        host := u.Host
+                        return redigo.Dial("tcp", host, opts...)
+                    }
+                }
+                // Fallback to DialURL for plain redis:// URLs
                 return redigo.DialURL(ru)
             },
             TestOnBorrow: func(c redigo.Conn, t time.Time) error {

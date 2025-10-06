@@ -28,12 +28,73 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - name: Download deps
-        run: go mod download
+        run: go run ./cmd/gforge mod download
       - name: Vet
-        run: go vet ./...
+        run: go run ./cmd/gforge vet
       - name: Test
-        run: go test ./... -v
+        run: go run ./cmd/gforge test
+      - name: CLI Test (gforge)
+        run: go run ./cmd/gforge test --with-build --cover
+        env:
+          LOG_FORMAT: off
+          GFORGE_SKIP_TOOLS: "1"
       - name: Govulncheck
+        run: go run ./cmd/gforge vuln
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.22.0'
+      - name: golangci-lint (gforge)
+        run: go run ./cmd/gforge lint --args "--timeout=5m"
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: [build-and-test, lint]
+    runs-on: ubuntu-latest
+    env:
+      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+      CF_PROJECT_NAME: ${{ secrets.CF_PROJECT_NAME }}
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.22.0'
+      - name: Compute deploy flags
+        id: flags
+        shell: bash
         run: |
-          go install golang.org/x/vuln/cmd/govulncheck@latest
-          govulncheck ./...
+          cf_ok=false
+          if [ -n "${CF_API_TOKEN}" ] && [ -n "${CF_ACCOUNT_ID}" ] && [ -n "${CF_PROJECT_NAME}" ]; then cf_ok=true; fi
+          rw_ok=false
+          if [ -n "${RAILWAY_TOKEN}" ]; then rw_ok=true; fi
+          echo "cf_ok=$cf_ok" >> $GITHUB_OUTPUT
+          echo "rw_ok=$rw_ok" >> $GITHUB_OUTPUT
+      - name: Export static site (SSG)
+        run: go run ./cmd/gforge export -o dist
+        env:
+          GFORGE_SKIP_TOOLS: "1"
+          LOG_FORMAT: off
+      - name: Deploy to Cloudflare Pages
+        if: ${{ steps.flags.outputs.cf_ok == 'true' }}
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ env.CF_API_TOKEN }}
+          accountId: ${{ env.CF_ACCOUNT_ID }}
+          projectName: ${{ env.CF_PROJECT_NAME }}
+          directory: dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install Railway CLI
+        if: ${{ steps.flags.outputs.rw_ok == 'true' }}
+        run: |
+          npm i -g @railway/cli
+      - name: Railway deploy (up)
+        if: ${{ steps.flags.outputs.rw_ok == 'true' }}
+        run: railway up --detach
+        env:
+          RAILWAY_TOKEN: ${{ env.RAILWAY_TOKEN }}

@@ -3,8 +3,10 @@ package templates
 import (
     "context"
     "io"
+    "strings"
 
     templ "github.com/a-h/templ"
+    "gothicforge3/internal/env"
 )
 
 func Index() templ.Component {
@@ -17,6 +19,15 @@ func Index() templ.Component {
         _, _ = io.WriteString(w, `<h1 class="text-5xl md:text-7xl font-extrabold tracking-tight bg-gradient-to-r from-[#4F46E5] to-[#EC4899] bg-clip-text text-transparent">Gothic Forge v3</h1>`)
         _, _ = io.WriteString(w, `<p class="mt-4 max-w-2xl mx-auto opacity-80">Lean, batteries-included Go starter with Templ + HTMX + Tailwind + DaisyUI. No Node required for rendering.</p>`)
         _, _ = io.WriteString(w, `<div class="mt-6 flex gap-3 justify-center"><a href="#counter" class="btn btn-primary">Try the demo</a><a href="https://github.com/gerrymoeis/gothic_forge" target="_blank" rel="noopener" class="btn btn-outline">View source</a></div>`)
+        // Auth links (only show Login if OAuth configured)
+        oauthEnabled := strings.TrimSpace(env.Get("GITHUB_CLIENT_ID", "")) != "" && strings.TrimSpace(env.Get("GITHUB_CLIENT_SECRET", "")) != ""
+        if oauthEnabled {
+            _, _ = io.WriteString(w, `<div class="mt-3 text-sm opacity-90">`+
+                `<a href="/auth/github/login" class="link link-hover text-primary">Sign in with GitHub</a>`+
+                ` <span class="opacity-50">·</span> `+
+                `<a href="/auth/logout" class="link link-hover">Logout</a>`+
+                `</div>`)
+        }
         _, _ = io.WriteString(w, `</div></div>`)
         _, _ = io.WriteString(w, `</section>`)
 

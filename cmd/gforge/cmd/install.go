@@ -2,9 +2,12 @@ package cmd
 
 import (
     "context"
+    "crypto/rand"
+    "encoding/hex"
     "fmt"
     "os"
     "path/filepath"
+    "strings"
     "time"
 
     "gothicforge3/internal/execx"
@@ -70,6 +73,17 @@ var installCmd = &cobra.Command{
             const minimal = "APP_ENV=development\nSITE_BASE_URL=http://127.0.0.1:8080\n"
             if err := os.WriteFile(envPath, []byte(minimal), 0o644); err != nil { return err }
         }
+        // Ensure JWT_SECRET exists in .env
+        if b, err := os.ReadFile(envPath); err == nil {
+            if !strings.Contains(string(b), "JWT_SECRET=") {
+                sec := genHex(32)
+                f, err := os.OpenFile(envPath, os.O_APPEND|os.O_WRONLY, 0o644)
+                if err == nil {
+                    defer f.Close()
+                    _, _ = f.WriteString("JWT_SECRET=" + sec + "\n")
+                }
+            }
+        }
 
         fmt.Println("  • Creating sitemap registry (app/sitemap/urls.txt) if missing")
         sitemapDir := filepath.Join("app", "sitemap")
@@ -113,4 +127,11 @@ func init() {
     installCmd.Flags().BoolVar(&installSkipTools, "skip-tools", false, "skip installing CLI tools (templ, air, gotailwindcss)")
     installCmd.Flags().BoolVar(&installGitInit, "git", false, "initialize a git repository and make initial commit")
     rootCmd.AddCommand(installCmd)
+}
+
+// genHex returns a random hex string with n bytes.
+func genHex(n int) string {
+    b := make([]byte, n)
+    if _, err := rand.Read(b); err != nil { return "" }
+    return hex.EncodeToString(b)
 }

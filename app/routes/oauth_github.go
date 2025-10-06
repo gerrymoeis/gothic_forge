@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"encoding/json"
 	"net/http"
 	"strings"
 	"time"
@@ -19,7 +18,6 @@ import (
 func init() {
 	RegisterRoute(registerOAuthGitHub)
 }
-
 func registerOAuthGitHub(r chi.Router) {
 	clientID := strings.TrimSpace(env.Get("GITHUB_CLIENT_ID", ""))
 	secret := strings.TrimSpace(env.Get("GITHUB_CLIENT_SECRET", ""))
@@ -50,8 +48,6 @@ func registerOAuthGitHub(r chi.Router) {
 
 	r.Method(http.MethodGet, "/auth/github/login", ghlogin.StateHandler(stateCfg, ghlogin.LoginHandler(conf, nil)))
 	r.Method(http.MethodGet, "/auth/github/callback", ghlogin.StateHandler(stateCfg, ghlogin.CallbackHandler(conf, http.HandlerFunc(githubSuccess), http.HandlerFunc(oauthFailure))))
-	r.Get("/auth/logout", http.HandlerFunc(logout))
-	r.Get("/api/me", http.HandlerFunc(apiMe))
 }
 
 func githubSuccess(w http.ResponseWriter, r *http.Request) {
@@ -85,26 +81,4 @@ func githubSuccess(w http.ResponseWriter, r *http.Request) {
 
 func oauthFailure(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "oauth failure", http.StatusUnauthorized)
-}
-
-func logout(w http.ResponseWriter, r *http.Request) {
-	// Expire cookie
-	http.SetCookie(w, &http.Cookie{
-		Name:     "gf_jwt",
-		Value:    "",
-		Path:     "/",
-		HttpOnly: true,
-		Expires:  time.Unix(0, 0),
-	})
-	http.Redirect(w, r, "/", http.StatusFound)
-}
-
-func apiMe(w http.ResponseWriter, r *http.Request) {
-	claims, err := auth.ReadAndVerifyCookie(r, "gf_jwt")
-	if err != nil {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	_ = json.NewEncoder(w).Encode(claims)
 }
