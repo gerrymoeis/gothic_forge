@@ -47,6 +47,9 @@ coverage.out
 /gforge
 /server
 
+# Test export folders
+dist-test/
+
 # Logs and profiles
 *.log
 *.prof
@@ -54,6 +57,7 @@ profile.out
 
 # Templ generated files (always re-generated)
 app/templates/*_templ.go
+!app/templates/layout_templ.go
 
 # Ignore scattered test files outside centralized tests/
 **/*_test.go

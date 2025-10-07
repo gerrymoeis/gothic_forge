@@ -1,4 +1,0 @@
-/* Gothic Forge overrides (no local Tailwind build; using DaisyUI CDN) */
-html { -webkit-text-size-adjust: 100%; }
-body { text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
-/* Place any small project-specific tweaks below */

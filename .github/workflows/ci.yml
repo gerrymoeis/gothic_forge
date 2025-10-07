@@ -22,6 +22,8 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '>=1.22.0'
+      - name: Generate templates (templ)
+        run: go run github.com/a-h/templ/cmd/templ@latest generate -include-version=false -include-timestamp=false
       - name: Cache Go modules
         uses: actions/cache@v4
         with:
@@ -52,6 +54,8 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '>=1.22.0'
+      - name: Generate templates (templ)
+        run: go run github.com/a-h/templ/cmd/templ@latest generate -include-version=false -include-timestamp=false
       - name: golangci-lint (gforge)
         run: go run ./cmd/gforge lint --args "--timeout=5m"
 
