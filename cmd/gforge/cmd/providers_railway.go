@@ -5,8 +5,11 @@ import (
   "encoding/json"
   "errors"
   "fmt"
+  "io"
+  "net/http"
   "os"
   "os/exec"
+  "path/filepath"
   "runtime"
   "strings"
   "time"
@@ -78,7 +81,7 @@ func runRailwayDeploy(dryRun bool) error {
 
   if linked {
     // Deploy current directory to linked service/project (interactive to allow service prompts)
-    if err := execx.RunInteractive(ctx, "railway up", "railway", "up", "--detach"); err != nil {
+    if err := execx.RunInteractive(ctx, "railway up", railwayPath, "up", "--detach"); err != nil {
       return err
     }
     return nil
@@ -95,7 +98,7 @@ func runRailwayDeploy(dryRun bool) error {
       {
         restore := withNoTokens()
         defer restore()
-        if err := execx.RunInteractive(ctx, "railway link", "railway", "link"); err != nil {
+        if err := execx.RunInteractive(ctx, "railway link", railwayPath, "link"); err != nil {
           return fmt.Errorf("railway link failed: %w", err)
         }
       }
@@ -104,7 +107,7 @@ func runRailwayDeploy(dryRun bool) error {
       {
         restore := withNoTokens()
         defer restore()
-        if err := execx.RunInteractive(ctx, "railway init", "railway", "init"); err != nil {
+        if err := execx.RunInteractive(ctx, "railway init", railwayPath, "init"); err != nil {
           return fmt.Errorf("railway init failed: %w", err)
         }
       }
@@ -113,10 +116,10 @@ func runRailwayDeploy(dryRun bool) error {
     {
       restore := withNoTokens()
       defer restore()
-      if err := execx.RunInteractive(ctx, "railway up", "railway", "up", "--detach"); err != nil {
+      if err := execx.RunInteractive(ctx, "railway up", railwayPath, "up", "--detach"); err != nil {
         // Attempt link then retry once
-        if linkErr := execx.RunInteractive(ctx, "railway link", "railway", "link"); linkErr == nil {
-          if retryErr := execx.RunInteractive(ctx, "railway up", "railway", "up", "--detach"); retryErr == nil {
+        if linkErr := execx.RunInteractive(ctx, "railway link", railwayPath, "link"); linkErr == nil {
+          if retryErr := execx.RunInteractive(ctx, "railway up", railwayPath, "up", "--detach"); retryErr == nil {
             return nil
           } else {
             return retryErr
@@ -177,17 +180,13 @@ func printRailwayInstallHelp() {
   fmt.Println("  • Railway CLI not found. Install using one of:")
   switch runtime.GOOS {
   case "windows":
-    fmt.Println("    - Scoop (recommended): scoop install railway")
-    fmt.Println("    - npm: npm i -g @railway/cli")
-    fmt.Println("    - Prebuilt binary: https://github.com/railwayapp/cli/releases")
+    fmt.Println("    - Scoop: scoop install railway")
+    fmt.Println("    - Direct binary (x64/arm64): https://github.com/railwayapp/cli/releases/latest")
   case "darwin":
     fmt.Println("    - Homebrew: brew install railway")
-    fmt.Println("    - npm: npm i -g @railway/cli")
-    fmt.Println("    - Prebuilt binary: https://github.com/railwayapp/cli/releases")
+    fmt.Println("    - Direct binary (x64/arm64): https://github.com/railwayapp/cli/releases/latest")
   default: // linux and others
-    fmt.Println("    - Shell: bash <(curl -fsSL cli.new)")
-    fmt.Println("    - npm: npm i -g @railway/cli")
-    fmt.Println("    - Prebuilt binary: https://github.com/railwayapp/cli/releases")
+    fmt.Println("    - Direct binary (x64/arm64): https://github.com/railwayapp/cli/releases/latest")
   }
 }
 
@@ -225,49 +224,100 @@ func ensureRailwayCLI() (string, error) {
   // If already in PATH, return it
   if p, ok := execx.Look("railway"); ok { return p, nil }
 
-  // Try OS-specific approaches
+  arch := runtime.GOARCH
+  if arch != "arm64" { arch = "amd64" }
+  home, _ := os.UserHomeDir()
+  binDir := filepath.Join(home, ".gforge", "bin")
+  _ = os.MkdirAll(binDir, 0o755)
+
+  // OS-specific install paths
   switch runtime.GOOS {
   case "windows":
-    // Prefer Scoop if present
+    // Try Scoop if present
     if _, err := exec.LookPath("scoop"); err == nil {
       if err := execx.Run(context.Background(), "scoop install railway", "scoop", "install", "railway"); err == nil {
         if p, ok := execx.Look("railway"); ok { return p, nil }
       }
     }
-    // Fall back to npm if available
-    if _, err := exec.LookPath("npm"); err == nil {
-      if err := execx.Run(context.Background(), "npm install railway", "npm", "i", "-g", "@railway/cli"); err == nil {
-        if p, ok := execx.Look("railway"); ok { return p, nil }
-      }
+    // Fallback to GitHub release
+    url := fmt.Sprintf("https://github.com/railwayapp/cli/releases/latest/download/railway-windows-%s.exe", arch)
+    dest := filepath.Join(binDir, "railway.exe")
+    if err := downloadFile(url, dest); err == nil {
+      _ = os.Chmod(dest, 0o755)
+      // Prepend binDir to PATH for this process
+      _ = os.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+      return dest, nil
     }
   case "darwin":
+    // Prefer Homebrew
     if _, err := exec.LookPath("brew"); err == nil {
       if err := execx.Run(context.Background(), "brew install railway", "brew", "install", "railway"); err == nil {
         if p, ok := execx.Look("railway"); ok { return p, nil }
       }
     }
-    if _, err := exec.LookPath("npm"); err == nil {
-      if err := execx.Run(context.Background(), "npm install railway", "npm", "i", "-g", "@railway/cli"); err == nil {
-        if p, ok := execx.Look("railway"); ok { return p, nil }
+    // Fallback to GitHub release (try macos and darwin naming)
+    for _, osName := range []string{"macos", "darwin"} {
+      url := fmt.Sprintf("https://github.com/railwayapp/cli/releases/latest/download/railway-%s-%s", osName, arch)
+      dest := filepath.Join(binDir, "railway")
+      if err := downloadFile(url, dest); err == nil {
+        _ = os.Chmod(dest, 0o755)
+        _ = os.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+        return dest, nil
       }
     }
   default: // linux and others
-    // Try shell script installer if bash+curl exist
-    if _, berr := exec.LookPath("bash"); berr == nil {
-      if _, cerr := exec.LookPath("curl"); cerr == nil {
-        // Use bash -lc to execute process substitution
-        cmd := exec.Command("bash", "-lc", "bash <(curl -fsSL cli.new)")
-        cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
-        _ = cmd.Run()
-        if p, ok := execx.Look("railway"); ok { return p, nil }
-      }
-    }
-    if _, err := exec.LookPath("npm"); err == nil {
-      if err := execx.Run(context.Background(), "npm install railway", "npm", "i", "-g", "@railway/cli"); err == nil {
-        if p, ok := execx.Look("railway"); ok { return p, nil }
-      }
+    url := fmt.Sprintf("https://github.com/railwayapp/cli/releases/latest/download/railway-linux-%s", arch)
+    dest := filepath.Join(binDir, "railway")
+    if err := downloadFile(url, dest); err == nil {
+      _ = os.Chmod(dest, 0o755)
+      _ = os.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+      return dest, nil
     }
   }
 
-  return "", errors.New("automatic install failed or package manager not available")
+  return "", errors.New("automatic install failed; please install from GitHub releases or package manager")
+}
+
+func downloadFile(url, dest string) error {
+  resp, err := http.Get(url)
+  if err != nil { return err }
+  defer resp.Body.Close()
+  if resp.StatusCode >= 300 { return fmt.Errorf("download failed: %s", resp.Status) }
+  f, err := os.Create(dest)
+  if err != nil { return err }
+  defer f.Close()
+  if _, err := io.Copy(f, resp.Body); err != nil { return err }
+  return nil
+}
+
+// setRailwayEnv sets environment variables on the linked Railway service.
+// - dryRun=true will only print the plan.
+// - skips empty values.
+func setRailwayEnv(ctx context.Context, kv map[string]string, dryRun bool) error {
+  // Detect CLI
+  if _, ok := execx.Look("railway"); !ok {
+    printRailwayInstallHelp()
+    return errors.New("railway CLI not found")
+  }
+  if dryRun {
+    fmt.Println("  • Railway (env sync): plan")
+    for k, v := range kv {
+      if strings.TrimSpace(v) == "" { continue }
+      fmt.Printf("    - set %s=***\n", k)
+    }
+    return nil
+  }
+  if !isRailwayLinkedCLI(ctx) {
+    fmt.Println("  • Railway not linked; skipping env sync. Run 'railway link' or set RAILWAY_TOKEN.")
+    return nil
+  }
+  // Apply variables
+  for k, v := range kv {
+    v = strings.TrimSpace(v)
+    if v == "" { continue }
+    if err := execx.RunInteractive(ctx, "railway variables set", "railway", "variables", "set", k+"="+v); err != nil {
+      return fmt.Errorf("setting %s failed: %w", k, err)
+    }
+  }
+  return nil
 }

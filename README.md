@@ -26,6 +26,8 @@ server‑side rendering, and a fast developer experience with hot reload.
   `app/styles/tailwind.input.css` (or your inputs).
 - **Hot reload**: `gforge dev` runs Templ generation/watch, Tailwind build/rebuild, and reloads the server.
 - **SEO basics**: Favicon, meta tags (Open Graph, Twitter), `/robots.txt` and `/sitemap.xml`; JSON‑LD via `LayoutSEO`.
+  - `SEO_KEYWORDS` env lets you override the default keywords included by `LayoutSEO`.
+  - `sitemap.xml` includes `<lastmod>` for all URLs.
 - **Clean routing**: `app/routes/routes.go` mounts core routes; per‑page registrars via `RegisterRoute`.
 - **Tests UX**: `gforge test` builds the server first and runs the suite, with quiet logs.
 
@@ -126,6 +128,7 @@ HTTP_PORT=8080
 LOG_FORMAT=
 CORS_ORIGINS=
 SITE_BASE_URL=http://127.0.0.1:8080
+SEO_KEYWORDS=
 DATABASE_URL=
 ```
 
@@ -230,6 +233,47 @@ MIT — see `LICENSE`.
 
 ## Deployment
 
+### First Deploy (quick guide)
+
+1) Prepare `.env`:
+
+```powershell
+cp .env.example .env
+go run ./cmd/gforge secrets --set SITE_BASE_URL=https://your-domain
+go run ./cmd/gforge secrets --set JWT_SECRET=$(openssl rand -hex 32)
+```
+
+2) Preflight and fix:
+
+```powershell
+go run ./cmd/gforge doctor --fix
+```
+
+3) Dry-run to preview steps:
+
+```powershell
+go run ./cmd/gforge deploy --dry-run
+```
+
+4) Interactive first deploy (provisions Neon/Valkey when tokens present, builds, syncs env to Railway, optional Pages):
+
+```powershell
+go run ./cmd/gforge deploy --run
+```
+
+If you plan to use GitHub OAuth, see the section below to set it up before prod.
+
+### Token Checklist
+
+- Railway:
+  - `RAILWAY_TOKEN` (project token) or `RAILWAY_API_TOKEN` (account/team)
+- Neon: `NEON_TOKEN`
+- Aiven Valkey: `AIVEN_TOKEN`
+- Cloudflare Pages: `CF_API_TOKEN`, `CF_ACCOUNT_ID`, `CF_PROJECT_NAME`
+- Optional OAuth: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `OAUTH_BASE_URL` (defaults to `SITE_BASE_URL`)
+
+Store these in `.env` locally. The deploy wizard can sync the key runtime ones to Railway for you.
+
 ### Railway (server/compute)
 
 Use the deploy wizard to guide environment setup and deploy. It checks required secrets and can run an interactive Railway flow.
@@ -237,6 +281,9 @@ Use the deploy wizard to guide environment setup and deploy. It checks required 
 ```powershell
 # dry run (no external calls): shows missing secrets and steps
 go run ./cmd/gforge deploy --dry-run
+
+# preflight check (no writes/no external actions): validates tools, tokens, env
+go run ./cmd/gforge deploy --check
 
 # interactive wizard (first time):
 go run ./cmd/gforge deploy --run
@@ -252,7 +299,7 @@ Required env (typically stored in `.env` or Railway variables):
 
 ```
 SITE_BASE_URL=https://your-domain
-SESSION_SECRET=<generated>
+JWT_SECRET=<generated>
 
 # Optional tokens/keys for provider automation
 RAILWAY_TOKEN=...          # project token
@@ -260,6 +307,7 @@ RAILWAY_API_TOKEN=...      # account/team token (for create/link)
 NEON_TOKEN=...
 AIVEN_TOKEN=...
 CF_API_TOKEN=...
+CF_PROJECT_NAME=...
 ```
 
 ### Cloudflare Pages (static)
@@ -276,9 +324,10 @@ go run ./cmd/gforge deploy pages --project <pages-project-name>
 
 Wrangler install:
 
-```
-npm i -g wrangler
-```
+Use Homebrew or prebuilt binaries (no Node required):
+
+- macOS: `brew install cloudflare/wrangler/wrangler`
+- Windows/Linux: download from https://github.com/cloudflare/wrangler/releases
 
 Notes:
 - Export output defaults to `dist/`. Use `--out` to change.

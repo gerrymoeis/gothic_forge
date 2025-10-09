@@ -19,6 +19,13 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+      CF_PROJECT_NAME: ${{ secrets.CF_PROJECT_NAME }}
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -26,52 +33,43 @@ jobs:
           go-version: '>=1.22.0'
       - name: Download deps
         run: go mod download
-      - name: Compute flags
-        id: flags
-        shell: bash
-        env:
-          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
-          CF_PROJECT_NAME: ${{ secrets.CF_PROJECT_NAME }}
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DEPLOY_PAGES: ${{ inputs.deploy_pages }}
-          DEPLOY_RAILWAY: ${{ inputs.deploy_railway }}
-          RUN_MIGRATIONS: ${{ inputs.run_migrations }}
-        run: |
-          cf_ok=false
-          if [ "$DEPLOY_PAGES" = "true" ] && [ -n "$CF_API_TOKEN" ] && [ -n "$CF_ACCOUNT_ID" ] && [ -n "$CF_PROJECT_NAME" ]; then cf_ok=true; fi
-          rw_ok=false
-          if [ "$DEPLOY_RAILWAY" = "true" ] && [ -n "$RAILWAY_TOKEN" ]; then rw_ok=true; fi
-          db_ok=false
-          if [ "$RUN_MIGRATIONS" = "true" ] && [ -n "$DATABASE_URL" ]; then db_ok=true; fi
-          echo "cf_ok=$cf_ok" >> $GITHUB_OUTPUT
-          echo "rw_ok=$rw_ok" >> $GITHUB_OUTPUT
-          echo "db_ok=$db_ok" >> $GITHUB_OUTPUT
       - name: Export static site (SSG)
         run: go run ./cmd/gforge export -o dist
         env:
           GFORGE_SKIP_TOOLS: ""
           LOG_FORMAT: off
       - name: Run DB migrations
-        if: ${{ steps.flags.outputs.db_ok == 'true' }}
+        if: ${{ inputs.run_migrations && env.DATABASE_URL != '' }}
         run: go run ./cmd/gforge db --migrate
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ env.DATABASE_URL }}
       - name: Deploy to Cloudflare Pages
-        if: ${{ steps.flags.outputs.cf_ok == 'true' }}
+        if: ${{ inputs.deploy_pages && env.CF_API_TOKEN != '' && env.CF_ACCOUNT_ID != '' && env.CF_PROJECT_NAME != '' }}
         uses: cloudflare/pages-action@v1
         with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          projectName: ${{ secrets.CF_PROJECT_NAME }}
+          apiToken: ${{ env.CF_API_TOKEN }}
+          accountId: ${{ env.CF_ACCOUNT_ID }}
+          projectName: ${{ env.CF_PROJECT_NAME }}
           directory: dist
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          gitHubToken: ${{ env.GITHUB_TOKEN }}
       - name: Install Railway CLI
-        if: ${{ steps.flags.outputs.rw_ok == 'true' }}
-        run: npm i -g @railway/cli
+        if: ${{ inputs.deploy_railway && env.RAILWAY_TOKEN != '' }}
+        run: |
+          ARCH=$(uname -m)
+          if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "amd64" ]; then
+            RARCH=amd64
+          elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+            RARCH=arm64
+          else
+            echo "Unknown arch $ARCH; defaulting to amd64"
+            RARCH=amd64
+          fi
+          echo "Installing Railway CLI for linux-$RARCH"
+          sudo curl -fsSL -o /usr/local/bin/railway "https://github.com/railwayapp/cli/releases/latest/download/railway-linux-$RARCH"
+          sudo chmod +x /usr/local/bin/railway
+          railway --version
       - name: Railway deploy (up)
-        if: ${{ steps.flags.outputs.rw_ok == 'true' }}
+        if: ${{ inputs.deploy_railway && env.RAILWAY_TOKEN != '' }}
         run: railway up --detach
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_TOKEN: ${{ env.RAILWAY_TOKEN }}

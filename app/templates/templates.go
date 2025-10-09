@@ -87,13 +87,18 @@ func Index() templ.Component {
         return nil
     })
     return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+        // Configurable SEO keywords via env, fallback to defaults
+        kw := strings.TrimSpace(env.Get("SEO_KEYWORDS", ""))
+        if kw == "" {
+            kw = "Kompetisi pemrograman Indonesia, Pelatihan coding mahasiswa, Innovation Lab, Gemastik, Olivia competition, UI/UX design learning, Web development training, C++ programming education"
+        }
         ctx = templ.WithChildren(ctx, body)
         return LayoutSEO(SEO{
             Title:       "Gothic Forge v3 — Lean Go starter (Templ + HTMX + Tailwind)",
             Description: "Lean, batteries-included Go starter with Templ + HTMX + Tailwind (no Node). Build fast, iterate faster.",
             Canonical:   "/",
             Image:       "",
-            Keywords:    "Kompetisi pemrograman Indonesia, Pelatihan coding mahasiswa, Innovation Lab, Gemastik, Olivia competition, UI/UX design learning, Web development training, C++ programming education",
+            Keywords:    kw,
             JSONLD:      `{
   "@context": "https://schema.org",
   "@type": "WebSite",

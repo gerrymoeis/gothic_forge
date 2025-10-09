@@ -98,10 +98,13 @@ func writeSEOFiles() error {
   sb := &strings.Builder{}
   sb.WriteString("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
   sb.WriteString("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n")
+  today := time.Now().UTC().Format("2006-01-02")
   for _, u := range out {
     sb.WriteString("  <url><loc>")
     sb.WriteString(u)
-    sb.WriteString("</loc></url>\n")
+    sb.WriteString("</loc><lastmod>")
+    sb.WriteString(today)
+    sb.WriteString("</lastmod></url>\n")
   }
   sb.WriteString("</urlset>\n")
   if err := os.WriteFile(siteMapPath, []byte(sb.String()), 0o644); err != nil { return err }

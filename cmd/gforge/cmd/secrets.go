@@ -13,6 +13,7 @@ import (
 var (
   secretsSet string
   secretsGet string
+  secretsGenJWT bool
 )
 
 var secretsCmd = &cobra.Command{
@@ -21,8 +22,8 @@ var secretsCmd = &cobra.Command{
   RunE: func(cmd *cobra.Command, args []string) error {
     banner()
     envPath := filepath.Join(".env")
-    if secretsSet == "" && secretsGet == "" {
-      fmt.Println("Usage: gforge secrets --set KEY=VAL | --get KEY")
+    if secretsSet == "" && secretsGet == "" && !secretsGenJWT {
+      fmt.Println("Usage: gforge secrets --set KEY=VAL | --get KEY | --gen-jwt")
       return nil
     }
     // Ensure .env exists
@@ -52,6 +53,20 @@ var secretsCmd = &cobra.Command{
       }
       return nil
     }
+    if secretsGenJWT {
+      v := strings.TrimSpace(kv["JWT_SECRET"])
+      if v == "" || len(v) < 32 || strings.EqualFold(v, "devsecret-change-me") {
+        kv["JWT_SECRET"] = genSecret()
+        // Rewrite .env
+        b := &strings.Builder{}
+        for k, val := range kv { fmt.Fprintf(b, "%s=%s\n", k, val) }
+        if err := os.WriteFile(envPath, []byte(b.String()), 0o600); err != nil { return err }
+        fmt.Println("→ generated strong JWT_SECRET and saved to .env")
+      } else {
+        fmt.Println("JWT_SECRET already set and looks strong; no changes made")
+      }
+      return nil
+    }
     if secretsSet != "" {
       parts := strings.SplitN(secretsSet, "=", 2)
       if len(parts) != 2 {
@@ -72,5 +87,6 @@ var secretsCmd = &cobra.Command{
 func init() {
   secretsCmd.Flags().StringVar(&secretsSet, "set", "", "set KEY=VAL")
   secretsCmd.Flags().StringVar(&secretsGet, "get", "", "get KEY")
+  secretsCmd.Flags().BoolVar(&secretsGenJWT, "gen-jwt", false, "generate and set a strong JWT_SECRET in .env")
   rootCmd.AddCommand(secretsCmd)
 }

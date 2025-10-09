@@ -1,14 +1,21 @@
 package cmd
 
 import (
+  "context"
+  "crypto/tls"
+  "database/sql"
   "fmt"
   "net"
+  "net/url"
   "os"
   "path/filepath"
   "runtime"
+  "strconv"
   "strings"
   "time"
 
+  redigo "github.com/gomodule/redigo/redis"
+  _ "github.com/jackc/pgx/v5/stdlib"
   "gothicforge3/internal/execx"
   "github.com/spf13/cobra"
 )
@@ -45,6 +52,50 @@ var doctorCmd = &cobra.Command{
           fmt.Printf("    → installed gotailwindcss: %s\n", installedPath)
           gwOK = true
         }
+      }
+    }
+
+    // Provider CLIs
+    // Railway
+    railPath, railOK := execx.Look("railway")
+    fmt.Printf("  • railway: %s\n", pathOrMissing(railPath, railOK))
+    if railOK {
+      if v, err := execx.RunCapture(context.Background(), "railway --version", "railway", "--version"); err == nil {
+        v = strings.TrimSpace(v)
+        if v != "" { fmt.Printf("    → %s\n", v) }
+      }
+    } else if doctorFix {
+      if p, err := ensureRailwayCLI(); err == nil {
+        railPath, railOK = p, true
+        fmt.Printf("    → installed railway: %s\n", p)
+        if v, err := execx.RunCapture(context.Background(), "railway --version", p, "--version"); err == nil {
+          v = strings.TrimSpace(v)
+          if v != "" { fmt.Printf("    → %s\n", v) }
+        }
+      } else {
+        fmt.Println("    → failed to install railway:", err)
+      }
+    }
+
+    // Wrangler
+    wrPath, wrOK := execx.Look("wrangler")
+    fmt.Printf("  • wrangler: %s\n", pathOrMissing(wrPath, wrOK))
+    if wrOK {
+      if v, err := execx.RunCapture(context.Background(), "wrangler --version", "wrangler", "--version"); err == nil {
+        v = strings.TrimSpace(v)
+        if v != "" { fmt.Printf("    → %s\n", v) }
+      }
+    } else if doctorFix {
+      if p, err := ensureWranglerCLI(); err == nil {
+        wrPath, wrOK = p, true
+        fmt.Printf("    → installed wrangler: %s\n", p)
+        // Use the binary we just installed if available
+        if v, err := execx.RunCapture(context.Background(), "wrangler --version", p, "--version"); err == nil {
+          v = strings.TrimSpace(v)
+          if v != "" { fmt.Printf("    → %s\n", v) }
+        }
+      } else {
+        fmt.Println("    → failed to install wrangler:", err)
       }
     }
 
@@ -110,6 +161,26 @@ var doctorCmd = &cobra.Command{
 
     // Readiness summary
     if hasEnv {
+      // Connectivity checks (optional)
+      dsn := strings.TrimSpace(readEnvKey(envPath, "DATABASE_URL"))
+      if dsn != "" {
+        if err := probePostgres(dsn); err == nil {
+          fmt.Println("  • Neon (Postgres): reachable")
+        } else {
+          fmt.Println("  • Neon (Postgres):", err)
+        }
+      }
+      vurl := strings.TrimSpace(readEnvKey(envPath, "VALKEY_URL"))
+      if vurl == "" { vurl = strings.TrimSpace(readEnvKey(envPath, "REDIS_URL")) }
+      if vurl != "" {
+        skip := strings.EqualFold(strings.TrimSpace(readEnvKey(envPath, "VALKEY_TLS_SKIP_VERIFY")), "1")
+        if err := probeValkey(vurl, skip); err == nil {
+          fmt.Println("  • Valkey/Redis: PING ok")
+        } else {
+          fmt.Println("  • Valkey/Redis:", err)
+        }
+      }
+
       railTok := strings.TrimSpace(readEnvKey(envPath, "RAILWAY_TOKEN"))
       apiTok := strings.TrimSpace(readEnvKey(envPath, "RAILWAY_API_TOKEN"))
       neonTok := strings.TrimSpace(readEnvKey(envPath, "NEON_TOKEN"))
@@ -236,4 +307,47 @@ func init() {
   doctorCmd.Flags().BoolVar(&doctorVerbose, "verbose", false, "verbose output")
   doctorCmd.Flags().BoolVar(&doctorFix, "fix", false, "attempt to fix common issues")
   rootCmd.AddCommand(doctorCmd)
+}
+
+// probePostgres attempts a short ping to DATABASE_URL using pgx stdlib.
+func probePostgres(dsn string) error {
+  ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+  defer cancel()
+  dbx, err := sql.Open("pgx", dsn)
+  if err != nil { return err }
+  defer dbx.Close()
+  return dbx.PingContext(ctx)
+}
+
+// probeValkey attempts to PING the given Redis/Valkey URI with optional TLS skip-verify.
+func probeValkey(uri string, skipVerify bool) error {
+  u, err := url.Parse(uri)
+  if err != nil { return err }
+  scheme := strings.ToLower(u.Scheme)
+  // Default: use DialURL for plain redis://
+  if scheme == "redis" && !skipVerify {
+    c, err := redigo.DialURL(uri)
+    if err != nil { return err }
+    defer c.Close()
+    _, err = c.Do("PING")
+    return err
+  }
+  // Compose options similar to server session pool
+  opts := []redigo.DialOption{}
+  if u.User != nil {
+    if pw, ok := u.User.Password(); ok { opts = append(opts, redigo.DialPassword(pw)) }
+  }
+  if dbStr := strings.TrimPrefix(u.Path, "/"); dbStr != "" {
+    if n, e := strconv.Atoi(dbStr); e == nil { opts = append(opts, redigo.DialDatabase(n)) }
+  }
+  if scheme == "rediss" || skipVerify {
+    opts = append(opts, redigo.DialUseTLS(true))
+    if skipVerify { opts = append(opts, redigo.DialTLSConfig(&tls.Config{InsecureSkipVerify: true})) }
+  }
+  host := u.Host
+  c, err := redigo.Dial("tcp", host, opts...)
+  if err != nil { return err }
+  defer c.Close()
+  _, err = c.Do("PING")
+  return err
 }
