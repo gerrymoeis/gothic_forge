@@ -89,32 +89,6 @@ var deployPagesCmd = &cobra.Command{
       return nil
     }
 
-    // Attempt install if requested
-    if deployInstall {
-      if p2, err := ensureWranglerCLI(); err == nil {
-        if p2 != "" { fmt.Println("wrangler installed:", p2) }
-        // Re-run detection
-        if p3, ok3 := execx.Look("wrangler"); ok3 {
-          fmt.Println("wrangler found:", p3)
-          args := []string{"pages", "deploy", pagesOutDir, "--commit-dirty=true"}
-          if strings.TrimSpace(pagesProject) != "" { args = append(args, "--project-name", pagesProject) }
-          if pagesDeployRun {
-            fmt.Println("Running:", "wrangler "+strings.Join(args, " "))
-            ctx := context.Background()
-            if strings.TrimSpace(pagesProject) != "" {
-              if err := execx.RunInteractive(ctx, "wrangler pages deploy", "wrangler", "pages", "deploy", pagesOutDir, "--commit-dirty=true", "--project-name", pagesProject); err != nil { return err }
-            } else {
-              if err := execx.RunInteractive(ctx, "wrangler pages deploy", "wrangler", "pages", "deploy", pagesOutDir, "--commit-dirty=true"); err != nil { return err }
-            }
-          } else {
-            fmt.Println("Dry-run. To deploy with wrangler:")
-            fmt.Println("  wrangler", strings.Join(args, " "))
-          }
-          return nil
-        }
-      }
-    }
-
     // Guidance when wrangler not installed (avoid npm; prefer brew or prebuilt binary)
     printWranglerInstallHelp()
     fmt.Println("Then run:")

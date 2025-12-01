@@ -43,6 +43,20 @@ func Get(key, def string) string {
 	return def
 }
 
+// GetWithDeprecation returns the value of the primary environment variable,
+// falling back to the deprecated variable if the primary is not set.
+// If the deprecated variable is used, a warning is logged.
+func GetWithDeprecation(primary, deprecated, description string) string {
+	if v := strings.TrimSpace(os.Getenv(primary)); v != "" {
+		return v
+	}
+	if v := strings.TrimSpace(os.Getenv(deprecated)); v != "" {
+		log.Printf("WARNING: %s is deprecated, use %s instead for %s", deprecated, primary, description)
+		return v
+	}
+	return ""
+}
+
 func findModuleRoot() string {
 	wd, err := os.Getwd()
 	if err != nil { return "" }

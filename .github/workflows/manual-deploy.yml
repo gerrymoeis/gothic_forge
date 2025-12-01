@@ -52,5 +52,5 @@ jobs:
       - name: Deployment complete
         run: |
           echo "✅ Static site deployed to Cloudflare Pages"
-          echo "📝 Note: Back4app Containers auto-deploy from GitHub pushes"
-          echo "🔗 View logs at https://dashboard.back4app.com"
+          echo "📝 Note: Leapcell auto-deploys from GitHub pushes"
+          echo "🔗 View logs at https://leapcell.io"

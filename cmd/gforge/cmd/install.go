@@ -164,7 +164,7 @@ var installCmd = &cobra.Command{
         fmt.Println("")
         fmt.Println("💡 Gothic Forge Opinionated Stack:")
         fmt.Println("   • Cloudflare Pages + Functions - static hosting + edge compute")
-        fmt.Println("   • Back4app Containers - Go backend compute (requires Docker)")
+        fmt.Println("   • Leapcell - Go backend compute (requires Docker)")
         fmt.Println("   • CockroachDB Serverless - PostgreSQL database")
         fmt.Println("   • Aiven Valkey - Redis-compatible cache")
         fmt.Println("")
@@ -210,7 +210,7 @@ func checkExternalTool(name, command, installCmd, docsURL string) {
 }
 
 // ensureDockerFiles creates Dockerfile and .dockerignore if they don't exist.
-// These files are essential for containerized deployments (Back4app, etc.).
+// These files are essential for containerized deployments (Leapcell, etc.).
 func ensureDockerFiles() error {
     dockerfilePath := "Dockerfile"
     dockerignorePath := ".dockerignore"
@@ -480,8 +480,6 @@ Jenkinsfile
 # ═══════════════════════════════════════════════════════════════════════════
 # Deployment configs (managed outside container)
 # ═══════════════════════════════════════════════════════════════════════════
-railway.json
-railway.toml
 fly.toml
 render.yaml
 Caddyfile

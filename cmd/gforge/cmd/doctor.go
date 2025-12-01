@@ -45,7 +45,7 @@ var doctorCmd = &cobra.Command{
         if v != "" { fmt.Printf("    → %s\n", v) }
       }
     } else {
-      fmt.Println("    ⚠️  Git is required for deployment workflows (Back4app, Railway)")
+      fmt.Println("    ⚠️  Git is required for deployment workflows (Leapcell)")
       if doctorFix {
         fmt.Println("    → Git requires manual installation")
         printGitInstallHelp()
@@ -95,7 +95,7 @@ var doctorCmd = &cobra.Command{
       }
     }
 
-    // Docker (required for Back4app Containers)
+    // Docker (required for Leapcell)
     dockerPath, dockerOK := execx.Look("docker")
     dockerDaemonRunning := false
     fmt.Printf("  • docker: %s\n", pathOrMissing(dockerPath, dockerOK))
@@ -133,7 +133,7 @@ var doctorCmd = &cobra.Command{
           hasDockerfile = true
         }
       } else {
-        fmt.Println("    ⚠️  Required for Back4app Containers deployment")
+        fmt.Println("    ⚠️  Required for Leapcell deployment")
       }
     } else {
       fmt.Printf("  • Dockerfile: present\n")
@@ -230,9 +230,9 @@ var doctorCmd = &cobra.Command{
       dsn := strings.TrimSpace(readEnvKey(envPath, "DATABASE_URL"))
       if dsn != "" {
         if err := probePostgres(dsn); err == nil {
-          fmt.Println("  • Neon (Postgres): reachable")
+          fmt.Println("  • CockroachDB (Postgres): reachable")
         } else {
-          fmt.Println("  • Neon (Postgres):", err)
+          fmt.Println("  • CockroachDB (Postgres):", err)
         }
       }
       vurl := strings.TrimSpace(readEnvKey(envPath, "VALKEY_URL"))
@@ -246,17 +246,18 @@ var doctorCmd = &cobra.Command{
         }
       }
 
-      railTok := strings.TrimSpace(readEnvKey(envPath, "RAILWAY_TOKEN"))
-      apiTok := strings.TrimSpace(readEnvKey(envPath, "RAILWAY_API_TOKEN"))
-      neonTok := strings.TrimSpace(readEnvKey(envPath, "NEON_TOKEN"))
+      cockroachTok := strings.TrimSpace(readEnvKey(envPath, "COCKROACH_API_KEY"))
       aivenTok := strings.TrimSpace(readEnvKey(envPath, "AIVEN_TOKEN"))
-      cfTok := strings.TrimSpace(readEnvKey(envPath, "CF_API_TOKEN"))
+      // Support both CLOUDFLARE_API_TOKEN (standard) and CF_API_TOKEN (legacy)
+      cfTok := strings.TrimSpace(readEnvKey(envPath, "CLOUDFLARE_API_TOKEN"))
+      if cfTok == "" {
+        cfTok = strings.TrimSpace(readEnvKey(envPath, "CF_API_TOKEN"))
+      }
       missing := []string{}
-      // At least one Railway token is required to automate deploy
-      if railTok == "" && apiTok == "" { missing = append(missing, "RAILWAY_TOKEN or RAILWAY_API_TOKEN") }
-      if neonTok == "" { missing = append(missing, "NEON_TOKEN") }
+      // Database provider required (CockroachDB only)
+      if cockroachTok == "" { missing = append(missing, "COCKROACH_API_KEY") }
       if aivenTok == "" { missing = append(missing, "AIVEN_TOKEN") }
-      if cfTok == "" { missing = append(missing, "CF_API_TOKEN") }
+      if cfTok == "" { missing = append(missing, "CLOUDFLARE_API_TOKEN") }
       ready := "Yes"
       if len(missing) > 0 { ready = "No" }
       fmt.Println("────────────────────────────────────────")
@@ -311,7 +312,7 @@ func writeEnvExample(p string) error {
 #
 # Gothic Forge Opinionated Stack:
 # - Cloudflare Pages + Functions (static hosting + edge compute)
-# - Back4app Containers (Go backend compute)
+# - Leapcell (Go backend compute)
 # - CockroachDB Serverless (PostgreSQL-compatible database)
 # - Aiven Valkey (Redis-compatible cache)
 
@@ -325,7 +326,7 @@ DATABASE_URL=
 VALKEY_URL=
 
 # Deployment tokens
-B4A_APP_URL=
+LEAPCELL_APP_URL=
 COCKROACH_API_KEY=
 AIVEN_TOKEN=
 CLOUDFLARE_API_TOKEN=
@@ -382,7 +383,7 @@ func printGitInstallHelp() {
 
 // printDockerInstallHelp displays platform-specific Docker installation instructions.
 func printDockerInstallHelp() {
-  fmt.Println("  • Docker installation required for Back4app Containers:")
+  fmt.Println("  • Docker installation required for Leapcell:")
   switch runtime.GOOS {
   case "windows":
     fmt.Println("    - Docker Desktop (recommended): https://docs.docker.com/desktop/install/windows-install/")

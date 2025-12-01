@@ -18,130 +18,68 @@ import (
 )
 
 var (
-	deployProd        bool
-	deployDryRun      bool
-	deployRun         bool
-	deployCheck       bool
-	deployInstall     bool
-	deployInitProject bool
-	deployProjectName string
-	deployServiceName string
-	deployTeamSlug    string
-	deployLinkInstead bool
-	deployWithValkey  bool
-	deployWithPages   bool
-	deployNeonRegion  string
-	deployNeonProject string
-	deployNeonBranch  string
-	deployNeonDBName  string
-	deployNeonUser    string
-	deployNeonPass    string
-	deployProvider    string // "railway", "back4app", or "leapcell"
+	deployProd       bool
+	deployDryRun     bool
+	deployCheck      bool
+	deployWithValkey bool
+	deployWithPages  bool
 )
 
 var deployCmd = &cobra.Command{
 	Use:   "deploy",
-	Short: "Deploy using omakase stack (Leapcell/Back4app/Railway + Cloudflare Pages)",
+	Short: "Deploy using the Opinionated Stack (Leapcell + CockroachDB + Aiven Valkey + Cloudflare)",
+	Long: `Deploy your Gothic Forge application using the Opinionated Stack:
+  • Compute: Leapcell (20 free projects on Hobby tier)
+  • Database: CockroachDB Serverless
+  • Cache: Aiven Valkey (Redis-compatible)
+  • CDN/Proxy: Cloudflare Pages (optional)`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		banner()
 		_ = env.Load() // ensure .env is loaded for both normal and --dry-run flows
-
-		// Normalize provider selection (default to back4app for new users, leapcell recommended)
-		deployProvider = strings.ToLower(strings.TrimSpace(deployProvider))
-		if deployProvider == "" {
-			deployProvider = "leapcell" // v7.0: Leapcell is now default (best free tier)
-		}
-		if deployProvider != "railway" && deployProvider != "back4app" && deployProvider != "leapcell" {
-			return fmt.Errorf("invalid provider: %s (must be 'railway', 'back4app', or 'leapcell')", deployProvider)
-		}
 
 		if deployCheck {
 			return runDeployPreflightCheck()
 		}
 		if deployDryRun {
-			fmt.Printf("Deploy (dry-run) - Provider: %s\n", deployProvider)
+			fmt.Println("Deploy (dry-run) - Opinionated Stack")
+			fmt.Println("  • Compute: Leapcell")
+			fmt.Println("  • Database: CockroachDB Serverless")
+			fmt.Println("  • Cache: Aiven Valkey")
+			fmt.Println("  • CDN: Cloudflare (optional)")
 		} else {
-			fmt.Printf("Deploy wizard - Provider: %s\n", deployProvider)
+			fmt.Println("Deploy wizard - Opinionated Stack")
+			fmt.Println("  • Compute: Leapcell")
+			fmt.Println("  • Database: CockroachDB Serverless")
+			fmt.Println("  • Cache: Aiven Valkey")
+			fmt.Println("  • CDN: Cloudflare (optional)")
 		}
 
-		if strings.TrimSpace(deployServiceName) == "" {
-			if v := strings.TrimSpace(os.Getenv("GFORGE_SERVICE_NAME")); v != "" {
-				deployServiceName = v
-			}
-		}
-
-		// Check required secrets/env (provider-specific)
-		required := []string{}
-		switch deployProvider {
-		case "railway":
-			required = []string{"RAILWAY_TOKEN", "AIVEN_TOKEN", "CLOUDFLARE_API_TOKEN"}
-		case "back4app":
-			required = []string{"AIVEN_TOKEN", "CLOUDFLARE_API_TOKEN"}
-		case "leapcell":
-			// Leapcell: Cloudflare token is only required when deploying to Pages (static-only path)
-			required = []string{}
-		}
-
+		// Check Opinionated Stack configuration
 		missing := []string{}
-		for _, k := range required {
-			if os.Getenv(k) == "" {
-				missing = append(missing, k)
-			}
-		}
 
-		// Check database provider (CockroachDB or Neon)
+		// Check database provider (CockroachDB only)
 		hasCockroach := strings.TrimSpace(os.Getenv("COCKROACH_API_KEY")) != ""
-		hasNeon := strings.TrimSpace(os.Getenv("NEON_TOKEN")) != ""
-		if !hasCockroach && !hasNeon {
-			missing = append(missing, "COCKROACH_API_KEY or NEON_TOKEN")
+		if !hasCockroach {
+			missing = append(missing, "COCKROACH_API_KEY")
 		}
 
 		siteBase := os.Getenv("SITE_BASE_URL")
 
-		fmt.Println("  • Checking secrets:")
+		fmt.Println("  • Checking Opinionated Stack configuration:")
 
 		// Check database provider first
 		if hasCockroach {
 			fmt.Println("    - COCKROACH_API_KEY: present (CockroachDB Serverless)")
-		} else if hasNeon {
-			fmt.Println("    - NEON_TOKEN: present (Neon Postgres fallback)")
 		} else {
-			fmt.Println("    - Database provider: MISSING (need COCKROACH_API_KEY or NEON_TOKEN)")
+			fmt.Println("    - Database provider: MISSING (need COCKROACH_API_KEY)")
 		}
 
-		// Check other required secrets
-		for _, k := range required {
-			v := os.Getenv(k)
-			if v == "" {
-				fmt.Printf("    - %s: MISSING\n", k)
-			} else {
-				fmt.Printf("    - %s: present\n", k)
-			}
-		}
-
-		// Provider-specific optional tokens
-		switch deployProvider {
-		case "railway":
-			apiTok := os.Getenv("RAILWAY_API_TOKEN")
-			if apiTok == "" {
-				fmt.Println("    - RAILWAY_API_TOKEN: not set (optional, enables project creation)")
-			} else {
-				fmt.Println("    - RAILWAY_API_TOKEN: present")
-			}
-		case "back4app":
-			b4aURL := os.Getenv("B4A_APP_URL")
-			if b4aURL == "" {
-				fmt.Println("    - B4A_APP_URL: not set (will be saved after guided setup)")
-			} else {
-				fmt.Println("    - B4A_APP_URL:", b4aURL)
-			}
-		case "leapcell":
-			leapURL := os.Getenv("LEAPCELL_APP_URL")
-			if leapURL == "" {
-				fmt.Println("    - LEAPCELL_APP_URL: not set (will be saved after guided setup)")
-			} else {
-				fmt.Println("    - LEAPCELL_APP_URL:", leapURL)
-			}
+		// Leapcell configuration
+		leapURL := os.Getenv("LEAPCELL_APP_URL")
+		if leapURL == "" {
+			fmt.Println("    - LEAPCELL_APP_URL: not set (will be saved after guided setup)")
+		} else {
+			fmt.Println("    - LEAPCELL_APP_URL:", leapURL)
 		}
 
 		if siteBase == "" {
@@ -150,23 +88,14 @@ var deployCmd = &cobra.Command{
 			fmt.Println("    - SITE_BASE_URL:", siteBase)
 		}
 
-		// Helpful provider links for sign-up and tokens (show in dry-run only; interactive flow shows links inline per prompt)
+		// Opinionated Stack provider links (show in dry-run only; interactive flow shows links inline per prompt)
 		if deployDryRun {
-			fmt.Println("  • Provider links:")
-			switch deployProvider {
-			case "railway":
-				fmt.Println("    - Railway:", "https://railway.app")
-			case "back4app":
-				fmt.Println("    - Back4app:", "https://www.back4app.com/signup")
-				fmt.Println("    - Back4app Docs:", "https://www.back4app.com/docs-containers")
-			case "leapcell":
-				fmt.Println("    - Leapcell:", "https://leapcell.io/signup")
-				fmt.Println("    - Leapcell Docs:", "https://docs.leapcell.io/")
-				fmt.Println("    - 🎁 20 FREE projects on Hobby tier!")
-			}
-			fmt.Println("    - CockroachDB (recommended):", "https://cockroachlabs.cloud/signup")
+			fmt.Println("  • Opinionated Stack provider links:")
+			fmt.Println("    - Leapcell:", "https://leapcell.io/signup")
+			fmt.Println("    - Leapcell Docs:", "https://docs.leapcell.io/")
+			fmt.Println("    - 🎁 20 FREE projects on Hobby tier!")
+			fmt.Println("    - CockroachDB:", "https://cockroachlabs.cloud/signup")
 			fmt.Println("    - CockroachDB service accounts:", "https://cockroachlabs.cloud/service-accounts")
-			fmt.Println("    - Neon API keys (fallback):", "https://neon.tech/docs/manage/api-keys")
 			fmt.Println("    - Aiven tokens:", "https://console.aiven.io/profile/tokens")
 			fmt.Println("    - Cloudflare API tokens:", "https://dash.cloudflare.com/profile/api-tokens")
 		}
@@ -186,12 +115,7 @@ var deployCmd = &cobra.Command{
 		fmt.Println("  • Preparing build artifacts and static assets")
 		fmt.Println("  • Provisioning CockroachDB (Serverless)")
 		fmt.Println("  • Provisioning Aiven Valkey")
-		switch deployProvider {
-		case "railway":
-			fmt.Println("  • Configuring Railway service & env")
-		case "back4app":
-			fmt.Println("  • Guided Back4app Container setup")
-		}
+		fmt.Println("  • Guided Leapcell deployment")
 		fmt.Println("  • Cloudflare Pages (optional)")
 		if deployProd {
 			fmt.Println("  • Using production settings")
@@ -201,24 +125,18 @@ var deployCmd = &cobra.Command{
 		}
 
 		if !deployDryRun {
-			// Interactive env setup only when not linked (first-time setup). Skip for subsequent deploys.
-			// Short context for quick CLI link checks only
-			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-			defer cancel()
-			if !isRailwayLinkedCLI(ctx) {
-				if err := interactiveEnvSetup(); err != nil {
-					fmt.Println("────────────────────────────────────────")
-					fmt.Println("Env setup aborted:", err)
-					return nil
-				}
+			// Interactive env setup for first-time deployment
+			if err := interactiveEnvSetup(); err != nil {
+				fmt.Println("────────────────────────────────────────")
+				fmt.Println("Env setup aborted:", err)
+				return nil
 			}
 			// Phase 2b: Ensure DATABASE_URL — CockroachDB is the opinionated Gothic Forge standard
-			// Fallback to Neon if NEON_TOKEN is set (backward compatibility)
 			if strings.TrimSpace(os.Getenv("DATABASE_URL")) == "" {
 				var dsn string
 				var err error
 
-				// Prefer CockroachDB (opinionated standard)
+				// CockroachDB (opinionated standard)
 				if strings.TrimSpace(os.Getenv("COCKROACH_API_KEY")) != "" {
 					fmt.Println("  • CockroachDB: configuring serverless database (Gothic Forge standard)")
 					// Use longer context for CockroachDB API operations
@@ -228,43 +146,12 @@ var deployCmd = &cobra.Command{
 					if err != nil {
 						fmt.Println("    → CockroachDB provisioning failed:", err)
 					}
-				} else if strings.TrimSpace(os.Getenv("NEON_TOKEN")) != "" {
-					// Fallback to Neon for backward compatibility
-					fmt.Println("  • Neon: configuring database connection (fallback)")
-					// Apply Neon overrides via env for this run
-					if v := strings.TrimSpace(deployNeonRegion); v != "" {
-						_ = os.Setenv("NEON_REGION", v)
-					}
-					if v := strings.TrimSpace(deployNeonProject); v != "" {
-						_ = os.Setenv("NEON_PROJECT_NAME", v)
-					}
-					if v := strings.TrimSpace(deployNeonBranch); v != "" {
-						_ = os.Setenv("NEON_BRANCH_NAME", v)
-					}
-					if v := strings.TrimSpace(deployNeonDBName); v != "" {
-						_ = os.Setenv("NEON_DB_NAME", v)
-					}
-					if v := strings.TrimSpace(deployNeonUser); v != "" {
-						_ = os.Setenv("NEON_DB_USER", v)
-					}
-					if v := strings.TrimSpace(deployNeonPass); v != "" {
-						_ = os.Setenv("NEON_DB_PASSWORD", v)
-					}
-					// Use longer context for Neon API operations
-					ctxNeon, cancelNeon := context.WithTimeout(context.Background(), 10*time.Minute)
-					defer cancelNeon()
-					dsn, err = neonAutoProvision(ctxNeon, deployDryRun)
-					if err != nil {
-						fmt.Println("    → Neon provisioning failed, trying interactive mode")
-						dsn, err = neonInteractiveProvision(ctx, deployDryRun)
-					}
 				} else {
 					// No API keys set - guide user
 					fmt.Println("  • Database: No provider configured")
-					fmt.Println("    → Recommended: CockroachDB Serverless (opinionated Gothic Forge standard)")
+					fmt.Println("    → CockroachDB Serverless (opinionated Gothic Forge standard)")
 					fmt.Println("    → Get API key: https://cockroachlabs.cloud/signup")
 					fmt.Println("    → Set in .env: COCKROACH_API_KEY=<your-key>")
-					fmt.Println("    → Alternative: Set NEON_TOKEN for Neon Postgres")
 				}
 
 				// Note: Migrations are now run automatically by the provider (see providers_cockroachdb.go)
@@ -272,8 +159,12 @@ var deployCmd = &cobra.Command{
 					fmt.Println("    ⚠️  Database not configured - skipping")
 				}
 			}
-			// Phase 3: Ensure REDIS_URL (Valkey) — optional with non-interactive/env/flag gating
-			if strings.TrimSpace(os.Getenv("REDIS_URL")) == "" {
+			// Phase 3: Ensure VALKEY_URL (Valkey) — optional with non-interactive/env/flag gating
+			if strings.TrimSpace(os.Getenv("VALKEY_URL")) == "" && strings.TrimSpace(os.Getenv("REDIS_URL")) == "" {
+				// Create context for interactive operations
+				ctxInteractive, cancelInteractive := context.WithTimeout(context.Background(), 30*time.Second)
+				defer cancelInteractive()
+				
 				nonInteractive := boolish(os.Getenv("GFORGE_NONINTERACTIVE"))
 				wantValkey := deployWithValkey || boolish(os.Getenv("GFORGE_WITH_VALKEY"))
 				if nonInteractive {
@@ -287,10 +178,10 @@ var deployCmd = &cobra.Command{
 						if vurl, verr := valkeyAutoProvision(ctxValkey, false); verr != nil {
 							fmt.Println("    → skipped Valkey provisioning:", verr)
 						} else if strings.TrimSpace(vurl) != "" {
-							fmt.Println("    → REDIS_URL configured")
+							fmt.Println("    → VALKEY_URL configured")
 						}
 					} else {
-						fmt.Println("    → skipping Valkey: non-interactive and AIVEN_TOKEN missing; set REDIS_URL or provide AIVEN_TOKEN")
+						fmt.Println("    → skipping Valkey: non-interactive and AIVEN_TOKEN missing; set VALKEY_URL or provide AIVEN_TOKEN")
 					}
 				} else {
 					if !wantValkey {
@@ -309,12 +200,12 @@ var deployCmd = &cobra.Command{
 								defer cancelValkey()
 								vurl, verr = valkeyAutoProvision(ctxValkey, false)
 							} else {
-								vurl, verr = valkeyInteractiveProvision(ctx, false)
+								vurl, verr = valkeyInteractiveProvision(ctxInteractive, false)
 							}
 							if verr != nil {
 								fmt.Println("    → skipped Valkey provisioning:", verr)
 							} else if strings.TrimSpace(vurl) != "" {
-								fmt.Println("    → REDIS_URL configured")
+								fmt.Println("    → VALKEY_URL configured")
 							}
 						}
 					} else {
@@ -326,12 +217,12 @@ var deployCmd = &cobra.Command{
 							defer cancelValkey()
 							vurl, verr = valkeyAutoProvision(ctxValkey, false)
 						} else {
-							vurl, verr = valkeyInteractiveProvision(ctx, false)
+							vurl, verr = valkeyInteractiveProvision(ctxInteractive, false)
 						}
 						if verr != nil {
 							fmt.Println("    → skipped Valkey provisioning:", verr)
 						} else if strings.TrimSpace(vurl) != "" {
-							fmt.Println("    → REDIS_URL configured")
+							fmt.Println("    → VALKEY_URL configured")
 						}
 					}
 				}
@@ -347,7 +238,7 @@ var deployCmd = &cobra.Command{
 				nonInteractive := boolish(os.Getenv("GFORGE_NONINTERACTIVE"))
 				wantPages := deployWithPages || boolish(os.Getenv("GFORGE_WITH_PAGES"))
 				// For Leapcell compute, default to skipping Pages unless explicitly requested
-				if deployProvider == "leapcell" && !wantPages {
+				if !wantPages {
 					fmt.Println("    → skipping Cloudflare Pages (Leapcell compute behind Cloudflare proxy; use --with-pages if needed)")
 				} else if nonInteractive {
 					if !wantPages {
@@ -378,116 +269,25 @@ var deployCmd = &cobra.Command{
 					}
 				}
 			}
-			// Interactive provider flow (chat-style) - route based on selected provider
+			// Leapcell deployment (Opinionated Stack compute provider)
 			reader := bufio.NewReader(os.Stdin)
 
-			// Provider-specific deployment logic
-			switch deployProvider {
-			case "leapcell":
-				// Leapcell: guided setup workflow (v7.0 default)
-				fmt.Println("  • Compute Provider: Leapcell (20 free projects!)")
-				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
-				defer cancel()
-				if err := runLeapcellDeploy(ctx, reader, false); err != nil {
-					fmt.Println("  • Leapcell setup error:", err)
-					fmt.Println("────────────────────────────────────────")
-					fmt.Println("Fix the issues above and re-run: gforge deploy --provider=leapcell")
-				} else {
-					fmt.Println("────────────────────────────────────────")
-					fmt.Println("Deployment complete. Your app is live on Leapcell!")
-				}
-				return nil
-
-			case "back4app":
-				// Back4app Containers: guided setup workflow
-				fmt.Println("  • Compute Provider: Back4app Containers")
-				ctx4, cancel4 := context.WithTimeout(context.Background(), 30*time.Minute)
-				defer cancel4()
-				if err := back4appGuidedSetup(ctx4, false); err != nil {
-					fmt.Println("  • Back4app setup error:", err)
-					fmt.Println("────────────────────────────────────────")
-					fmt.Println("Fix the issues above and re-run: gforge deploy --provider=back4app")
-				} else {
-					fmt.Println("────────────────────────────────────────")
-					fmt.Println("Deployment complete. Your app is live on Back4app!")
-				}
-				return nil
-
-			case "railway":
-				// Railway: automated CLI workflow
-				fmt.Println("  • Compute Provider: Railway")
-				// Railway env sync (push .env variables to linked service)
-				{
-					kv := loadEnvFile(".env")
-					filtered := map[string]string{
-						"SITE_BASE_URL":          strings.TrimSpace(kv["SITE_BASE_URL"]),
-						"JWT_SECRET":             strings.TrimSpace(kv["JWT_SECRET"]),
-						"DATABASE_URL":           strings.TrimSpace(kv["DATABASE_URL"]),
-						"REDIS_URL":              strings.TrimSpace(kv["REDIS_URL"]),
-						"VALKEY_URL":             strings.TrimSpace(kv["VALKEY_URL"]),
-						"VALKEY_TLS_SKIP_VERIFY": strings.TrimSpace(kv["VALKEY_TLS_SKIP_VERIFY"]),
-					}
-					_ = setRailwayEnv(context.Background(), filtered, false)
-				}
-				// Offer to install Railway CLI if missing
-				if _, ok := execx.Look("railway"); !ok {
-					fmt.Print("  • Railway CLI not found. Install now? [Y/n]: ")
-					ans, _ := reader.ReadString('\n')
-					ans = strings.ToLower(strings.TrimSpace(ans))
-					if ans == "" || ans == "y" || ans == "yes" {
-						deployInstall = true
-					}
-				}
-				// Offer to create or link if not linked (CLI-based detection)
-				ctx2, cancel2 := context.WithTimeout(context.Background(), 30*time.Second)
-				defer cancel2()
-				if !isRailwayLinkedCLI(ctx2) {
-					fmt.Println("  • No Railway project link detected.")
-					fmt.Println("    1) Create new Railway project (init)")
-					fmt.Println("    2) Link to existing project")
-					fmt.Println("    3) Skip for now")
-					fmt.Print("    Select [1/2/3]: ")
-					ans, _ := reader.ReadString('\n')
-					ans = strings.TrimSpace(ans)
-					switch ans {
-					case "2":
-						deployInitProject = true
-						deployLinkInstead = true
-					case "3":
-						deployInitProject = false
-					default: // "1" or empty → init
-						deployInitProject = true
-						deployLinkInstead = false
-					}
-				}
-				// Confirm deploy (skip confirmation when already linked for seamless updates)
-				doDeploy := deployRun // allow --run to auto-confirm
-				{
-					ctx3, cancel3 := context.WithTimeout(context.Background(), 30*time.Second)
-					defer cancel3()
-					if isRailwayLinkedCLI(ctx3) {
-						doDeploy = true
-					}
-				}
-				if !doDeploy {
-					fmt.Print("  • Proceed with Railway deploy now? [Y/n]: ")
-					ans, _ := reader.ReadString('\n')
-					ans = strings.ToLower(strings.TrimSpace(ans))
-					doDeploy = (ans == "" || ans == "y" || ans == "yes")
-				}
-				if doDeploy {
-					if err := runRailwayDeploy(false); err != nil {
-						fmt.Println("  • Railway deploy error:", err)
-					} else {
-						fmt.Println("────────────────────────────────────────")
-						fmt.Println("Deployment steps executed. Review your Railway dashboard for status.")
-					}
-					return nil
-				}
+			fmt.Println("  • Deploying to Leapcell (20 free projects!)")
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+			defer cancel()
+			if err := runLeapcellDeploy(ctx, reader, false); err != nil {
+				fmt.Println("  • Leapcell deployment error:", err)
 				fmt.Println("────────────────────────────────────────")
-				fmt.Println("You can re-run deployment anytime with: gforge deploy --run")
-				return nil
+				fmt.Println("Fix the issues above and re-run: gforge deploy")
+			} else {
+				fmt.Println("────────────────────────────────────────")
+				fmt.Println("✓ Deployment complete! Your app is live on Leapcell!")
+				fmt.Println("  Next steps:")
+				fmt.Println("    - Test your deployment at the URL shown above")
+				fmt.Println("    - Check logs: gforge logs")
+				fmt.Println("    - Monitor health: curl https://your-app.leapcell.dev/readyz")
 			}
+			return nil
 		}
 
 		if len(missing) > 0 {
@@ -498,10 +298,8 @@ var deployCmd = &cobra.Command{
 			}
 			fmt.Println()
 			fmt.Println("Quick links:")
-			fmt.Println("  Railway: https://railway.app")
-			fmt.Println("  CockroachDB (recommended): https://cockroachlabs.cloud/signup")
+			fmt.Println("  CockroachDB: https://cockroachlabs.cloud/signup")
 			fmt.Println("  CockroachDB service accounts: https://cockroachlabs.cloud/service-accounts")
-			fmt.Println("  Neon API keys (fallback): https://neon.tech/docs/manage/api-keys")
 			fmt.Println("  Aiven tokens: https://console.aiven.io/profile/tokens")
 			fmt.Println("  Cloudflare API tokens: https://dash.cloudflare.com/profile/api-tokens")
 			return nil
@@ -509,17 +307,13 @@ var deployCmd = &cobra.Command{
 
 		fmt.Println("────────────────────────────────────────")
 		// Dry-run provider steps
-		// Phase 2b: Show database provisioning plan - CockroachDB (opinionated standard) or Neon (fallback)
+		// Phase 2b: Show database provisioning plan - CockroachDB (opinionated standard)
 		if strings.TrimSpace(os.Getenv("COCKROACH_API_KEY")) != "" {
 			fmt.Println("  • CockroachDB (dry-run): would provision serverless cluster")
 			_, _ = cockroachInteractiveProvision(context.Background(), true)
-		} else if strings.TrimSpace(os.Getenv("NEON_TOKEN")) != "" {
-			fmt.Println("  • Neon (dry-run): would provision database (fallback option)")
-			_, _ = neonAutoProvision(context.Background(), true)
 		} else {
 			fmt.Println("  • Database (dry-run): No provider configured")
-			fmt.Println("    → Recommended: Set COCKROACH_API_KEY for CockroachDB Serverless")
-			fmt.Println("    → Alternative: Set NEON_TOKEN for Neon Postgres")
+			fmt.Println("    → Set COCKROACH_API_KEY for CockroachDB Serverless")
 		}
 		{
 			nonInteractive := boolish(os.Getenv("GFORGE_NONINTERACTIVE"))
@@ -544,20 +338,7 @@ var deployCmd = &cobra.Command{
 				fmt.Println("  • Cloudflare Pages (dry-run): would run wrangler pages deploy dist --project-name $CF_PROJECT_NAME")
 			}
 		}
-		// Railway env sync (dry-run): show what would be pushed if linked
-		{
-			kv := loadEnvFile(".env")
-			filtered := map[string]string{
-				"SITE_BASE_URL":          strings.TrimSpace(kv["SITE_BASE_URL"]),
-				"JWT_SECRET":             strings.TrimSpace(kv["JWT_SECRET"]),
-				"DATABASE_URL":           strings.TrimSpace(kv["DATABASE_URL"]),
-				"REDIS_URL":              strings.TrimSpace(kv["REDIS_URL"]),
-				"VALKEY_URL":             strings.TrimSpace(kv["VALKEY_URL"]),
-				"VALKEY_TLS_SKIP_VERIFY": strings.TrimSpace(kv["VALKEY_TLS_SKIP_VERIFY"]),
-			}
-			_ = setRailwayEnv(context.Background(), filtered, true)
-		}
-		_ = runRailwayDeploy(true)
+
 		fmt.Println("Deployment flow stub complete. (More integrations to follow)")
 		return nil
 	},
@@ -567,40 +348,17 @@ func init() {
 	deployCmd.Flags().BoolVar(&deployProd, "prod", false, "use production settings")
 	deployCmd.Flags().BoolVar(&deployDryRun, "dry-run", false, "show steps without executing")
 	deployCmd.Flags().BoolVar(&deployCheck, "check", false, "preflight checks for tools, tokens, env; no writes or external actions")
-	deployCmd.Flags().BoolVar(&deployInstall, "install-tools", false, "attempt to auto-install missing provider CLIs (e.g., Railway)")
-	deployCmd.Flags().BoolVar(&deployRun, "run", false, "execute provider CLIs (Railway, etc.) after build")
-	deployCmd.Flags().StringVar(&deployProvider, "provider", "leapcell", "compute provider: 'leapcell' (default), 'back4app' (guided), or 'railway' (CLI)")
-	deployCmd.Flags().BoolVar(&deployInitProject, "init-project", false, "create/link Railway project if missing (requires RAILWAY_API_TOKEN)")
-	deployCmd.Flags().StringVar(&deployProjectName, "project-name", "gothic-forge-v3", "Railway project name to create/use")
-	deployCmd.Flags().StringVar(&deployServiceName, "service-name", "", "Railway service name to create/use for this directory")
-	deployCmd.Flags().StringVar(&deployTeamSlug, "team", "", "Railway team slug (optional)")
 	deployCmd.Flags().BoolVar(&deployWithValkey, "with-valkey", false, "configure Valkey/Redis cache during deploy (optional)")
 	deployCmd.Flags().BoolVar(&deployWithPages, "with-pages", false, "deploy static export to Cloudflare Pages (optional)")
-	deployCmd.Flags().StringVar(&deployNeonRegion, "neon-region", "", "Neon region id (e.g., aws-us-east-1); overrides NEON_REGION for this run")
-	deployCmd.Flags().StringVar(&deployNeonProject, "neon-project", "", "Neon project name; overrides NEON_PROJECT_NAME for this run")
-	deployCmd.Flags().StringVar(&deployNeonBranch, "neon-branch", "", "Neon branch name; overrides NEON_BRANCH_NAME for this run")
-	deployCmd.Flags().StringVar(&deployNeonDBName, "neon-db", "", "Neon database name; overrides NEON_DB_NAME for this run")
-	deployCmd.Flags().StringVar(&deployNeonUser, "neon-user", "", "Neon database role/user; overrides NEON_DB_USER for this run")
-	deployCmd.Flags().StringVar(&deployNeonPass, "neon-password", "", "Neon database password; overrides NEON_DB_PASSWORD for this run")
 	rootCmd.AddCommand(deployCmd)
 }
 
-// runDeployPreflightCheck validates tools, tokens, .env, Railway link, and Pages config without modifying state.
+// runDeployPreflightCheck validates tools, tokens, .env, and Pages config without modifying state.
 func runDeployPreflightCheck() error {
 	fmt.Println("Deploy preflight check")
 
 	// Tools
-	railPath, railOK := execx.Look("railway")
 	wrPath, wrOK := execx.Look("wrangler")
-	fmt.Printf("  • railway: %s\n", pathOrMissing(railPath, railOK))
-	if railOK {
-		if v, err := execx.RunCapture(context.Background(), "railway --version", "railway", "--version"); err == nil {
-			v = strings.TrimSpace(v)
-			if v != "" {
-				fmt.Printf("    → %s\n", v)
-			}
-		}
-	}
 	fmt.Printf("  • wrangler: %s\n", pathOrMissing(wrPath, wrOK))
 	if wrOK {
 		if v, err := execx.RunCapture(context.Background(), "wrangler --version", "wrangler", "--version"); err == nil {
@@ -634,65 +392,44 @@ func runDeployPreflightCheck() error {
 	}
 
 	// Provider tokens and config
-	railTok := strings.TrimSpace(kv["RAILWAY_TOKEN"]) != ""
-	railApiTok := strings.TrimSpace(kv["RAILWAY_API_TOKEN"]) != ""
-	neonTok := strings.TrimSpace(kv["NEON_TOKEN"]) != ""
 	cockroachTok := strings.TrimSpace(kv["COCKROACH_API_KEY"]) != ""
 	aivenTok := strings.TrimSpace(kv["AIVEN_TOKEN"]) != ""
 	// Support both CLOUDFLARE_API_TOKEN (wrangler standard) and CF_API_TOKEN (legacy)
 	cfTok := strings.TrimSpace(kv["CLOUDFLARE_API_TOKEN"]) != "" || strings.TrimSpace(kv["CF_API_TOKEN"]) != ""
-	cfAcct := strings.TrimSpace(kv["CF_ACCOUNT_ID"]) != "" || strings.TrimSpace(kv["CLOUDFLARE_ACCOUNT_ID"]) != ""
+	cfAcct := strings.TrimSpace(kv["CLOUDFLARE_ACCOUNT_ID"]) != "" || strings.TrimSpace(kv["CF_ACCOUNT_ID"]) != ""
 	cfProj := strings.TrimSpace(kv["CF_PROJECT_NAME"]) != ""
 	dbSet := strings.TrimSpace(kv["DATABASE_URL"]) != ""
-	redisSet := strings.TrimSpace(kv["REDIS_URL"]) != "" || strings.TrimSpace(kv["VALKEY_URL"]) != ""
+	valkeySet := strings.TrimSpace(kv["VALKEY_URL"]) != "" || strings.TrimSpace(kv["REDIS_URL"]) != ""
 
 	// Gating based on env for optional providers
 	wantValkey := boolish(os.Getenv("GFORGE_WITH_VALKEY")) || deployWithValkey
 	wantPages := boolish(os.Getenv("GFORGE_WITH_PAGES")) || deployWithPages
 
-	// Railway link state (read-only)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	linked := isRailwayLinkedCLI(ctx)
-	cancel()
-	if linked {
-		fmt.Println("  • Railway: linked")
-	} else {
-		fmt.Println("  • Railway: not linked (run 'railway link' or allow wizard to init)")
-	}
-	// Token presence info (advisory)
-	fmt.Printf("  • Railway tokens: RAILWAY_TOKEN=%s, RAILWAY_API_TOKEN=%s\n",
-		presentOrMissing(railTok), presentOrMissing(railApiTok))
-
 	// Compute readiness
 	ready := true
 	missing := []string{}
-	// Tools
-	if !railOK {
-		ready = false
-		missing = append(missing, "railway CLI")
-	}
 	// Core env
 	if !jwtOK {
 		ready = false
 		missing = append(missing, "JWT_SECRET (strong)")
 	}
-	// DB - prioritize CockroachDB
-	if !(dbSet || cockroachTok || neonTok) {
+	// DB - CockroachDB only
+	if !(dbSet || cockroachTok) {
 		ready = false
-		missing = append(missing, "DATABASE_URL or COCKROACH_API_KEY or NEON_TOKEN")
+		missing = append(missing, "DATABASE_URL or COCKROACH_API_KEY")
 	}
 	// Valkey (optional)
 	if wantValkey {
-		if !(redisSet || aivenTok) {
+		if !(valkeySet || aivenTok) {
 			ready = false
-			missing = append(missing, "REDIS_URL or AIVEN_TOKEN")
+			missing = append(missing, "VALKEY_URL or AIVEN_TOKEN")
 		}
 	}
 	// Pages (optional)
 	if wantPages {
 		if !(cfTok && cfAcct && cfProj) {
 			ready = false
-			missing = append(missing, "CLOUDFLARE_API_TOKEN, CF_ACCOUNT_ID, CF_PROJECT_NAME")
+			missing = append(missing, "CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, CF_PROJECT_NAME")
 		}
 		// Note: wrangler missing does not fail readiness (you can deploy via GitHub Action), but we warn
 		if !wrOK {
@@ -865,46 +602,7 @@ func genSecret() string {
 	return hex.EncodeToString(buf)
 }
 
-// Stub functions for removed providers (Railway, Neon)
-// TODO: Remove these stubs and all Railway/Neon logic in next cleanup phase
 
-func isRailwayLinkedCLI(ctx context.Context) bool {
-	// Railway provider removed - always return false
-	return false
-}
-
-func setRailwayEnv(ctx context.Context, kv map[string]string, dryRun bool) error {
-	// Railway provider removed - no-op
-	if dryRun {
-		fmt.Println("  • Railway (dry-run): provider removed, use Back4app instead")
-	}
-	return nil
-}
-
-func runRailwayDeploy(dryRun bool) error {
-	// Railway provider removed
-	if !dryRun {
-		return fmt.Errorf("Railway provider removed - use Back4app: gforge deploy --provider=back4app")
-	}
-	fmt.Println("  • Railway (dry-run): provider removed, use Back4app instead")
-	return nil
-}
-
-func neonAutoProvision(ctx context.Context, dryRun bool) (string, error) {
-	// Neon provider removed - use CockroachDB
-	if !dryRun {
-		return "", fmt.Errorf("Neon provider removed - use CockroachDB (set COCKROACH_API_KEY)")
-	}
-	return "", nil
-}
-
-func neonInteractiveProvision(ctx context.Context, dryRun bool) (string, error) {
-	// Neon provider removed - use CockroachDB
-	if !dryRun {
-		return "", fmt.Errorf("Neon provider removed - use CockroachDB (set COCKROACH_API_KEY)")
-	}
-	return "", nil
-}
 
 // fileStartsWithWizardHeader detects if the .env was auto-generated by a previous wizard run.
 func fileStartsWithWizardHeader(path string) bool {

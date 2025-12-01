@@ -105,5 +105,5 @@ jobs:
         run: |
           echo "✅ CI/CD Pipeline Complete"
           echo "📦 Static site deployed to Cloudflare Pages"
-          echo "🐳 Back4app auto-deploys from GitHub (connect repo in dashboard)"
-          echo "🔗 Dashboard: https://dashboard.back4app.com"
+          echo "🐳 Leapcell auto-deploys from GitHub (connect repo in dashboard)"
+          echo "🔗 Dashboard: https://leapcell.io"

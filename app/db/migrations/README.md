@@ -86,7 +86,7 @@ ALTER TABLE users DROP COLUMN role;
 ## Automatic Migration Running
 
 Gothic Forge automatically runs migrations after database provisioning during deployment:
-1. Database is provisioned (CockroachDB or Neon)
+1. Database is provisioned (CockroachDB)
 2. CONNECTION string is saved to `.env`
 3. Migrations are applied automatically
 4. Your app is ready to use!

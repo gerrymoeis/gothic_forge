@@ -15,10 +15,10 @@ var logsCmd = &cobra.Command{
   Short: "View application logs",
   Long: `View application logs for your deployed Gothic Forge app.
 
-Gothic Forge uses Back4app Containers for backend compute.
-View your application logs in the Back4app dashboard:
+Gothic Forge uses Leapcell for backend compute.
+View your application logs in the Leapcell dashboard:
 
-  1. Log in to https://dashboard.back4app.com
+  1. Log in to https://leapcell.io
   2. Select your app
   3. Go to "Logs" tab
   4. View real-time logs and filter by severity
@@ -28,8 +28,8 @@ Local development logs are shown in the terminal when running 'gforge dev'.`,
     banner()
     fmt.Println("Application Logs")
     fmt.Println("────────────────────────────────────────")
-    fmt.Println("\n📊 Production Logs (Back4app):")
-    fmt.Println("  1. Visit: https://dashboard.back4app.com")
+    fmt.Println("\n📊 Production Logs (Leapcell):")
+    fmt.Println("  1. Visit: https://leapcell.io")
     fmt.Println("  2. Select your app")
     fmt.Println("  3. Go to \"Logs\" tab")
     fmt.Println("  4. View real-time logs and metrics")

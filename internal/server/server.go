@@ -80,10 +80,7 @@ func New() *chi.Mux {
     sessionManager.Cookie.SameSite = http.SameSiteLaxMode
     sessionManager.Cookie.Secure = env.Get("APP_ENV", "development") == "production"
     // Valkey/Redis session store if URL provided (redigo pool)
-    ru := strings.TrimSpace(env.Get("VALKEY_URL", ""))
-    if ru == "" {
-        ru = strings.TrimSpace(env.Get("REDIS_URL", ""))
-    }
+    ru := env.GetWithDeprecation("VALKEY_URL", "REDIS_URL", "cache")
     if ru != "" {
         // Support TLS (rediss://) and optional skip-verify via VALKEY_TLS_SKIP_VERIFY=1
         skipVerify := strings.EqualFold(strings.TrimSpace(env.Get("VALKEY_TLS_SKIP_VERIFY", "")), "1")

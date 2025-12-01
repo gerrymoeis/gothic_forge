@@ -100,7 +100,7 @@ func Register(r *chi.Mux) {
             status = http.StatusServiceUnavailable
             results = append(results, "valkey: FAIL")
         } else {
-            valkeyURL := strings.TrimSpace(env.Get("VALKEY_URL", env.Get("REDIS_URL", "")))
+            valkeyURL := env.GetWithDeprecation("VALKEY_URL", "REDIS_URL", "cache")
             if valkeyURL != "" {
                 results = append(results, "valkey: OK")
             } else {
@@ -230,8 +230,7 @@ func dbReady() (bool, error) {
 // It returns nil if VALKEY_URL/REDIS_URL is empty (treated as SKIP) or if PING succeeds.
 // It returns an error only when a URL is configured but PING fails.
 func valkeyPing() error {
-    ru := strings.TrimSpace(env.Get("VALKEY_URL", ""))
-    if ru == "" { ru = strings.TrimSpace(env.Get("REDIS_URL", "")) }
+    ru := env.GetWithDeprecation("VALKEY_URL", "REDIS_URL", "cache")
     if ru == "" { return nil } // not configured → skip is OK
     skipVerify := strings.EqualFold(strings.TrimSpace(env.Get("VALKEY_TLS_SKIP_VERIFY", "")), "1")
     u, perr := url.Parse(ru)

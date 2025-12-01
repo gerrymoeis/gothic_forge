@@ -65,7 +65,7 @@ app/templates/*_templ.go
 
 # Development/Session documentation (not for public repo)
 # Keep: README.md, QUICKSTART.md, CODE_OF_CONDUCT.md, CONTRIBUTING.md, SECURITY.md, LICENSE
-# Keep: CHANGELOG_v6.1.md, functions/README.md (user-facing guides)
+# Keep: functions/README.md (user-facing guides)
 CLEANUP_SUMMARY.md
 DEPLOYMENT_FIXES_v6.5.md
 LEAPCELL_RESEARCH_v6.6.md
@@ -93,3 +93,11 @@ QUICKSTART_NEW.md
 FINAL_STATUS.md
 V6.1_IMPLEMENTATION.md
 V6.1_SUMMARY.md
+
+# Version-specific documentation (prevent future commits)
+*_v[0-9]*.md
+DEPLOYMENT_ANALYSIS*.md
+PRODUCTION_STACK*.md
+RELEASE_NOTES*.md
+CHANGELOG_v*.md
+LEAPCELL_FIX*.md

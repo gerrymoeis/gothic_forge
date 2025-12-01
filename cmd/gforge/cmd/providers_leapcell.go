@@ -4,7 +4,10 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"os/exec"
 	"strings"
+
+	"gothicforge3/internal/execx"
 )
 
 // runLeapcellDeploy guides the user through deploying to Leapcell
@@ -331,4 +334,24 @@ func printLeapcellSuccess() {
 	fmt.Println("  • Auto-deploy on git push")
 	fmt.Println("  • Built-in CDN and SSL")
 	fmt.Println("")
+}
+
+// detectGitRemote attempts to detect the current repository's remote URL.
+// Returns empty string if git is not available or no remote is configured.
+func detectGitRemote() string {
+	// Check if git is available
+	if _, ok := execx.Look("git"); !ok {
+		return ""
+	}
+	
+	cmd := exec.Command("git", "remote", "get-url", "origin")
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	url := strings.TrimSpace(string(out))
+	// Clean up SSH URLs to HTTPS format for display
+	url = strings.Replace(url, "git@github.com:", "https://github.com/", 1)
+	url = strings.TrimSuffix(url, ".git")
+	return url
 }

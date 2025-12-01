@@ -8,25 +8,30 @@ Gothic Forge v3 is built with Go, [chi](https://github.com/go-chi/chi),
 [DaisyUI](https://daisyui.com/). It ships secure defaults (CSP, CSRF, rate limiting),
 server‑side rendering, and a fast developer experience with hot reload.
 
-## Philosophy: Teaching Through Doing
+## Philosophy: Opinionated Stack
 
-Gothic Forge embraces an **opinionated, educational approach** to web development:
+Gothic Forge v3 embraces an **opinionated, production-ready approach** to web development with a carefully curated stack:
 
 - **Batteries-included** - Sane defaults that work out of the box
-- **Guided learning** - Some deployment steps teach you WHY, not just HOW
-- **Production-ready** - Omakase stack choices based on real-world experience
-- **Developer empowerment** - Learn the platform, don't just use a black box
+- **Production-proven** - Stack choices based on real-world experience at scale
+- **Developer-friendly** - Simple deployment with powerful capabilities
+- **Cost-effective** - Serverless-first architecture that scales to zero
 
-### Why Some Steps Are Manual
+### The Opinionated Stack
 
-For certain platforms (like Back4app Containers), we intentionally guide you through manual setup steps instead of automating everything. This helps you:
+Gothic Forge standardizes on a modern, serverless-first infrastructure:
 
-1. **Understand your deployment** - Know exactly what's running where
-2. **Debug effectively** - When things go wrong, you know the architecture
-3. **Make informed choices** - Learn why we chose these specific services
-4. **Gain transferable skills** - These patterns apply beyond Gothic Forge
+- **Compute**: [Leapcell](https://leapcell.io/) - Simple, fast container deployment
+- **Database**: [CockroachDB Serverless](https://cockroachlabs.cloud/) - Distributed PostgreSQL
+- **Cache**: [Aiven Valkey](https://aiven.io/) - Redis-compatible, managed
+- **CDN/Proxy**: [Cloudflare](https://cloudflare.com/) - Global edge network
 
-After the initial guided setup, everything runs automatically via `git push` or CLI commands.
+**Why these choices?**
+1. **Serverless-first** - Pay only for what you use, scale automatically
+2. **PostgreSQL-compatible** - Use familiar tools and patterns
+3. **Global by default** - Low latency worldwide
+4. **Simple deployment** - One command to production
+5. **Production-grade** - Built-in resilience and monitoring
 
 ## Stack
 
@@ -57,7 +62,6 @@ Prerequisites:
 
 - **Go 1.22+** (required)
 - **Git** (required for deployments)
-- **Docker** (required for Back4app Containers deployments)
 - Optional CLIs: `templ`, `gotailwindcss` (auto-checked by `gforge doctor`)
 
 Run `gforge doctor --fix` to check all prerequisites and get installation guidance.
@@ -196,7 +200,7 @@ Gothic Forge uses **CockroachDB Serverless** as the opinionated database standar
 - **True serverless** - Pay only for what you use, scales to zero
 - **Global distribution** - Low latency worldwide with automatic replication
 - **Built-in resilience** - Automatic failover and high availability
-- **Educational value** - Learn distributed SQL and modern cloud-native architecture
+- **Production-proven** - Powers mission-critical applications at scale
 
 ### 1) Automatic Provisioning (Recommended)
 
@@ -229,19 +233,7 @@ DATABASE_URL=postgresql://<user>:<password>@<host>:26257/<db>?sslmode=verify-ful
 
 **Note**: CockroachDB uses `sslmode=verify-full` for enhanced security.
 
-### 3) Using Neon (Fallback Option)
-
-If you prefer Neon Postgres, it's fully supported:
-
-```bash
-# Set NEON_TOKEN instead of COCKROACH_API_KEY
-NEON_TOKEN=your_neon_token_here
-
-# Or manually set DATABASE_URL
-DATABASE_URL=postgres://<user>:<password>@<host>.neon.tech/<db>?sslmode=require
-```
-
-### 4) Working with Migrations
+### 3) Working with Migrations
 
 Migrations are located in `app/db/migrations/` and use the goose format.
 
@@ -289,7 +281,7 @@ go run ./cmd/gforge dev
 ```
 
 - `/readyz` → should show `db: OK` when `DATABASE_URL` is set and reachable.
-- `/db/posts` → sample list/form UI backed by Postgres.
+- `/db/posts` → sample list/form UI backed by CockroachDB.
 
 Notes:
 - Mutations under `/db/posts` require a valid `gf_jwt` cookie (JWT). Use your OAuth flow or wire a dev-only login helper if needed.
@@ -318,16 +310,23 @@ MIT — see `LICENSE`.
 
 ## Deployment
 
-### Omakase Stack Choices
+### The Opinionated Stack
 
-Gothic Forge supports multiple deployment providers with different philosophies:
+Gothic Forge v3 uses a carefully curated, production-ready stack:
 
-| Provider | Approach | Best For | Requires |
-|----------|----------|----------|----------|
-| **Railway** | Automated CLI | Fast iteration, existing users | Railway CLI, tokens |
-| **Back4app** | Guided manual | Learning, GitHub workflow | Git, Docker, GitHub repo |
+| Component | Provider | Why This Choice |
+|-----------|----------|-----------------|
+| **Compute** | [Leapcell](https://leapcell.io/) | Simple container deployment, automatic scaling, GitHub integration |
+| **Database** | [CockroachDB Serverless](https://cockroachlabs.cloud/) | Distributed PostgreSQL, true serverless, global replication |
+| **Cache** | [Aiven Valkey](https://aiven.io/) | Redis-compatible, fully managed, high availability |
+| **CDN/Proxy** | [Cloudflare](https://cloudflare.com/) | Global edge network, DDoS protection, automatic SSL |
 
-Choose via `--provider` flag: `gforge deploy --provider=railway` (default) or `--provider=back4app`.
+This stack provides:
+- **Serverless-first architecture** - Pay only for what you use
+- **Global distribution** - Low latency worldwide
+- **Production-grade reliability** - Built-in resilience and monitoring
+- **Simple deployment** - One command to production
+- **Cost-effective** - Generous free tiers, scales with your needs
 
 ### First Deploy (quick guide)
 
@@ -339,158 +338,159 @@ go run ./cmd/gforge secrets --set SITE_BASE_URL=https://your-domain
 go run ./cmd/gforge secrets --set JWT_SECRET=$(openssl rand -hex 32)
 ```
 
-2) Preflight and fix:
+2) Get your API keys:
+
+- **CockroachDB**: https://cockroachlabs.cloud/signup
+- **Aiven Valkey**: https://console.aiven.io/signup
+- **Cloudflare**: https://dash.cloudflare.com/profile/api-tokens
+- **Leapcell**: https://leapcell.io/
+
+3) Preflight and fix:
 
 ```powershell
 go run ./cmd/gforge doctor --fix
 ```
 
-3) Choose your provider and deploy:
+4) Deploy to production:
 
 ```powershell
-# Railway (automated CLI workflow)
-go run ./cmd/gforge deploy --provider=railway --run
+# Interactive deployment wizard
+go run ./cmd/gforge deploy --run
 
-# Back4app Containers (guided setup, teaches Docker + CI/CD)
-go run ./cmd/gforge deploy --provider=back4app
+# Or dry-run to see what would happen
+go run ./cmd/gforge deploy --dry-run
 ```
 
-### Token Checklist
+### Environment Variables Checklist
 
-**Compute Providers** (choose one):
-- Railway:
-  - `RAILWAY_TOKEN` (project token) or `RAILWAY_API_TOKEN` (account/team)
-- Back4app:
-  - `B4A_APP_URL` (saved automatically after guided setup)
+**Required for Deployment**:
+- `COCKROACH_API_KEY` - CockroachDB API key for database provisioning
+- `AIVEN_TOKEN` - Aiven API token for Valkey cache provisioning
+- `CLOUDFLARE_API_TOKEN` - Cloudflare API token for CDN/proxy
+- `CLOUDFLARE_ACCOUNT_ID` - Your Cloudflare account ID
+- `LEAPCELL_APP_URL` - Your Leapcell application URL (set after first deploy)
+- `SITE_BASE_URL` - Your production domain (e.g., https://your-app.com)
+- `JWT_SECRET` - Secure random string (min 32 chars)
 
-**Shared Services**:
-- Neon: `NEON_TOKEN`
-- Aiven Valkey: `AIVEN_TOKEN`
-- Cloudflare Pages: `CF_API_TOKEN`, `CF_ACCOUNT_ID`, `CF_PROJECT_NAME`
-- Optional OAuth: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `OAUTH_BASE_URL` (defaults to `SITE_BASE_URL`)
+**Optional**:
+- `CF_PROJECT_NAME` - Cloudflare Pages project name (for static exports)
+- `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` - For OAuth integration
+- `OAUTH_BASE_URL` - OAuth callback base (defaults to `SITE_BASE_URL`)
 
-Store these in `.env` locally. The deploy wizard can sync the key runtime ones to your provider.
+Store these in `.env` locally. The deploy wizard will guide you through setting them up.
 
-### Back4app Containers (guided, educational)
+### Leapcell Deployment
 
-Back4app Containers uses a **guided manual setup** to teach Docker containerization and GitHub-based CI/CD.
-
-**Why guided instead of automated?**
-- You learn Docker containerization workflow
-- Understand GitHub Actions integration
-- Practice environment variable management
-- Gain transferable DevOps knowledge
-
-**Prerequisites**:
-- Git installed and configured
-- Docker installed and running
-- GitHub repository created
-- Dockerfile in project root
+Leapcell provides simple, fast container deployment with automatic scaling and GitHub integration.
 
 **First-time setup**:
 
 ```powershell
-# Interactive guided setup (one-time only)
-go run ./cmd/gforge deploy --provider=back4app
+# Interactive deployment wizard
+go run ./cmd/gforge deploy --run
 ```
 
-The wizard will walk you through:
-1. Creating Back4app account
-2. Connecting your GitHub repository
-3. Configuring environment variables
-4. Watching the initial Docker build
-5. Saving your deployment URL
+The wizard will:
+1. Validate your environment configuration
+2. Provision CockroachDB database (if needed)
+3. Provision Aiven Valkey cache (if needed)
+4. Configure Cloudflare proxy settings
+5. Deploy your application to Leapcell
+6. Run database migrations automatically
 
-**Subsequent deployments** (the easy way):
+**Subsequent deployments**:
 
 ```bash
+# Quick redeploy after changes
 git commit -am "your changes"
-git push origin main
-# Back4app auto-builds and deploys! ✨
+go run ./cmd/gforge deploy --run
 ```
 
-**What you learn**:
-- Docker image building and containerization
-- GitHub webhooks and auto-deployment
-- Environment-based configuration
-- Zero-downtime rolling deployments
-- Platform debugging and log analysis
-
-**Troubleshooting**:
-- Check `gforge doctor` for Git/Docker status
-- Ensure Dockerfile exists in project root
-- Verify environment variables in Back4app dashboard
-- View deployment logs at https://dashboard.back4app.com/apps
-
-### Railway (automated CLI)
-
-Use the deploy wizard to guide environment setup and deploy. It checks required secrets and can run an interactive Railway flow.
+**Deployment options**:
 
 ```powershell
-# dry run (no external calls): shows missing secrets and steps
+# Dry run (see what would happen, no external calls)
 go run ./cmd/gforge deploy --dry-run
 
-# preflight check (no writes/no external actions): validates tools, tokens, env
+# Preflight check (validate tools, tokens, env)
 go run ./cmd/gforge deploy --check
-
-# interactive wizard (first time):
-go run ./cmd/gforge deploy --run
-
-# Flags:
-#   --init-project   create/link Railway project if missing (wizard will prompt)
-#   --project-name   defaults to gothic-forge-v3
-#   --service-name   defaults to web
-#   --install-tools  attempt to install Railway CLI if missing
 ```
 
-Required env (typically stored in `.env` or Railway variables):
+**What gets deployed**:
+- Your Go application as a container
+- Database migrations (automatic)
+- Environment variables (synced securely)
+- Health check endpoints configured
+- Cloudflare proxy for global CDN
 
+**Troubleshooting**:
+- Check `gforge doctor` for prerequisites
+- Verify all API keys are set in `.env`
+- Check deployment logs in Leapcell dashboard
+- Verify `/readyz` endpoint shows all services healthy
+
+### Cloudflare Configuration
+
+Cloudflare provides the CDN/proxy layer for your application, offering:
+- Global edge network for low latency
+- Automatic DDoS protection
+- Free SSL/TLS certificates
+- Caching and performance optimization
+
+**Setup**:
+
+1. Get your Cloudflare API token: https://dash.cloudflare.com/profile/api-tokens
+2. Set in `.env`:
+
+```bash
+CLOUDFLARE_API_TOKEN=your_token_here
+CLOUDFLARE_ACCOUNT_ID=your_account_id
 ```
-SITE_BASE_URL=https://your-domain
-JWT_SECRET=<generated>
 
-# Optional tokens/keys for provider automation
-RAILWAY_TOKEN=...          # project token
-RAILWAY_API_TOKEN=...      # account/team token (for create/link)
-NEON_TOKEN=...
-AIVEN_TOKEN=...
-CF_API_TOKEN=...
-CF_PROJECT_NAME=...
-```
+3. The deploy wizard will configure Cloudflare automatically
 
-### Cloudflare Pages (static)
+**Optional: Static Site Export**
 
-Export and deploy static HTML to Cloudflare Pages. `_headers` is generated with security/caching defaults.
+You can also export and deploy static HTML to Cloudflare Pages:
 
 ```powershell
-# one-shot deploy with wrangler (if installed)
+# Deploy static export to Cloudflare Pages
 go run ./cmd/gforge deploy pages --run --project <pages-project-name>
 
-# or dry-run to see the command printed
+# Dry-run to see the command
 go run ./cmd/gforge deploy pages --project <pages-project-name>
 ```
-
-Wrangler install:
-
-Use Homebrew or prebuilt binaries (no Node required):
-
-- macOS: `brew install cloudflare/wrangler/wrangler`
-- Windows/Linux: download from https://github.com/cloudflare/wrangler/releases
 
 Notes:
 - Export output defaults to `dist/`. Use `--out` to change.
 - Security headers (CSP, HSTS, etc.) are written to `dist/_headers`.
 
-### Valkey (Redis-compatible)
+### Aiven Valkey (Redis-compatible Cache)
 
-Valkey is optional and used for sessions and caching when configured.
+Aiven Valkey provides a fully managed, Redis-compatible cache for sessions and caching.
 
-Env variables:
+**Why Aiven Valkey?**
+- Fully managed, no maintenance required
+- High availability with automatic failover
+- Redis-compatible, works with existing tools
+- Generous free tier for development
 
+**Setup**:
+
+1. Get your Aiven API token: https://console.aiven.io/signup
+2. Set in `.env`:
+
+```bash
+AIVEN_TOKEN=your_token_here
 ```
+
+3. The deploy wizard will provision Valkey automatically and set `VALKEY_URL`
+
+**Manual configuration** (if using existing Valkey/Redis):
+
+```bash
 VALKEY_URL=redis://user:pass@host:port/0
-# or REDIS_URL=...
 VALKEY_TLS_SKIP_VERIFY=1   # only in dev, if needed
 ```
 
-`/readyz` will report `valkey: OK|SKIP` automatically.
+The `/readyz` endpoint will report `valkey: OK|SKIP` automatically.
