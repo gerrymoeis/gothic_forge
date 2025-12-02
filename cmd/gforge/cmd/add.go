@@ -69,8 +69,6 @@ var addCmd = &cobra.Command{
             fields := []string{}
             if len(args) > 2 { fields = args[2:] }
             return scaffoldCRUDDB(name, fields)
-        case "job":
-            return scaffoldJob(name)
         case "email":
             provider := "sendgrid" // default
             if len(args) > 2 {
@@ -111,9 +109,6 @@ func printAddUsage() {
     fmt.Println("  gforge add auth                   - Add login/logout routes")
     fmt.Println("  gforge add oauth <provider>       - Add OAuth provider routes")
     fmt.Println()
-    fmt.Println("⚙️  Background Jobs:")
-    fmt.Println("  gforge add job <name>             - Add background job handler")
-    fmt.Println()
     fmt.Println("📧 Email:")
     fmt.Println("  gforge add email <template> [provider]  - Add email template (default: sendgrid)")
     fmt.Println()
@@ -122,7 +117,6 @@ func printAddUsage() {
     fmt.Println("  gforge add model Post title:string body:text")
     fmt.Println("  gforge add edge /api/hello POST")
     fmt.Println("  gforge add cruddb Article title:string content:text")
-    fmt.Println("  gforge add job SendWelcomeEmail")
     fmt.Println("  gforge add email welcome sendgrid")
     fmt.Println("  gforge add email password-reset mailgun")
 }
@@ -592,168 +586,6 @@ func AuthLogin() templ.Component {
     fmt.Println("Added auth routes: /login, /logout")
     fmt.Printf("  - %s\n", routePath)
     fmt.Printf("  - %s\n", tmplPath)
-    return nil
-}
-
-// scaffoldJob creates a background job handler in internal/jobs.
-// Example: gforge add job SendWelcomeEmail
-func scaffoldJob(name string) error {
-    // Ensure PascalCase
-    pas := name
-    if !strings.Contains(name, "-") && !strings.Contains(name, "_") {
-        // Already in PascalCase or single word
-        pas = strings.ToUpper(name[:1]) + name[1:]
-    } else {
-        pas = pascalCase(name)
-    }
-    
-    // Convert PascalCase to snake_case for file names
-    snake := ""
-    for i, r := range pas {
-        if i > 0 && r >= 'A' && r <= 'Z' {
-            snake += "_"
-        }
-        snake += string(r)
-    }
-    snake = strings.ToLower(snake)
-    
-    // Convert snake_case to colon-separated for job type
-    jobType := strings.ReplaceAll(snake, "_", ":")
-    
-    // Create job file
-    jobPath := filepath.Join("internal", "jobs", fmt.Sprintf("%s.go", snake))
-    jobSrc := fmt.Sprintf(`package jobs
-
-import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"log"
-)
-
-// %[1]s is a background job that handles %[2]s.
-//
-// Example usage:
-//
-//	payload, _ := json.Marshal(%[1]sPayload{
-//	    // Add your fields here
-//	})
-//	queue.Enqueue(ctx, "%[3]s", payload)
-type %[1]s struct{}
-
-// %[1]sPayload contains the data needed for %[2]s.
-type %[1]sPayload struct {
-	// Add your payload fields here
-	// Example: UserID int64 ` + "`json:\"user_id\"`" + `
-}
-
-// Type returns the job type identifier.
-func (j *%[1]s) Type() string {
-	return "%[3]s"
-}
-
-// Handle processes the %[2]s job.
-func (j *%[1]s) Handle(ctx context.Context, payload []byte) error {
-	var data %[1]sPayload
-	if err := json.Unmarshal(payload, &data); err != nil {
-		return fmt.Errorf("invalid %[2]s payload: %%w", err)
-	}
-
-	// TODO: Implement your job logic here
-	log.Printf("Processing %[2]s job: %%+v", data)
-
-	// Example: Send email, call API, process data, etc.
-	
-	return nil
-}
-`, pas, name, jobType)
-    
-    if err := execx.WriteFileIfMissing(jobPath, []byte(jobSrc), 0o644); err != nil {
-        return err
-    }
-
-    // Create test file
-    testPath := filepath.Join("internal", "jobs", fmt.Sprintf("%s_test.go", snake))
-    testSrc := fmt.Sprintf(`package jobs
-
-import (
-	"context"
-	"encoding/json"
-	"testing"
-)
-
-// Test%[1]s tests the %[1]s handler.
-func Test%[1]s(t *testing.T) {
-	job := &%[1]s{}
-	ctx := context.Background()
-
-	tests := []struct {
-		name    string
-		payload %[1]sPayload
-		wantErr bool
-	}{
-		{
-			name: "valid payload",
-			payload: %[1]sPayload{
-				// Add test data here
-			},
-			wantErr: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			payload, err := json.Marshal(tt.payload)
-			if err != nil {
-				t.Fatalf("failed to marshal payload: %%v", err)
-			}
-
-			err = job.Handle(ctx, payload)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Handle() error = %%v, wantErr %%v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-// Test%[1]sInvalidPayload tests error handling for invalid payloads.
-func Test%[1]sInvalidPayload(t *testing.T) {
-	job := &%[1]s{}
-	ctx := context.Background()
-
-	// Invalid JSON
-	err := job.Handle(ctx, []byte("invalid json"))
-	if err == nil {
-		t.Error("Handle() expected error for invalid JSON, got nil")
-	}
-}
-
-// Test%[1]sType tests the job type identifier.
-func Test%[1]sType(t *testing.T) {
-	job := &%[1]s{}
-	want := "%[2]s"
-	if got := job.Type(); got != want {
-		t.Errorf("Type() = %%v, want %%v", got, want)
-	}
-}
-`, pas, jobType)
-    
-    if err := execx.WriteFileIfMissing(testPath, []byte(testSrc), 0o644); err != nil {
-        return err
-    }
-
-    fmt.Printf("Added background job: %s\n", pas)
-    fmt.Printf("  - %s\n", jobPath)
-    fmt.Printf("  - %s\n", testPath)
-    fmt.Println()
-    fmt.Println("Next steps:")
-    fmt.Println("  1. Edit the payload struct in", jobPath)
-    fmt.Println("  2. Implement the job logic in Handle()")
-    fmt.Println("  3. Register the job with your worker:")
-    fmt.Printf("     worker.Register(&jobs.%s{})\n", pas)
-    fmt.Println("  4. Enqueue jobs from your application:")
-    fmt.Printf("     queue.Enqueue(ctx, \"%s\", payload)\n", jobType)
-    
     return nil
 }
 

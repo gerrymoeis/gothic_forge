@@ -1,40 +1,47 @@
-// Package jobs provides a background job processing system using Asynq.
+// Package jobs provides minimal interfaces for background job processing.
 //
-// This package implements a Redis-backed job queue that supports:
-//   - Asynchronous job processing
-//   - Job scheduling with cron-like syntax
-//   - Automatic retry with exponential backoff
-//   - Job monitoring and inspection
+// This package defines core interfaces without implementing a specific
+// job queue system, allowing applications to choose their own implementation.
 //
-// # Basic Usage
+// # Interfaces
 //
-// Define a job by implementing the Job interface:
+// Job - Represents a background task
+// Queue - Enqueues jobs for processing
+// Worker - Processes jobs from a queue
+// Scheduler - Schedules jobs to run at specific times
 //
-//	type SendEmailJob struct{}
+// # Recommended Libraries
 //
-//	func (j *SendEmailJob) Type() string {
-//	    return "email:send"
+// For production use, consider:
+//   - Asynq (https://github.com/hibiken/asynq) - Redis-based, recommended
+//   - Machinery (https://github.com/RichardKnop/machinery) - Multiple backends
+//   - River (https://github.com/riverqueue/river) - PostgreSQL-based
+//
+// For simple use cases:
+//   - In-process channels
+//   - PostgreSQL LISTEN/NOTIFY
+//   - Cron jobs
+//
+// # Example with Asynq
+//
+//	import "github.com/hibiken/asynq"
+//
+//	// Define job
+//	type EmailJob struct {
+//	    To      string
+//	    Subject string
+//	    Body    string
 //	}
 //
-//	func (j *SendEmailJob) Handle(ctx context.Context, payload []byte) error {
-//	    var email EmailPayload
-//	    if err := json.Unmarshal(payload, &email); err != nil {
-//	        return err
-//	    }
-//	    return sendEmail(ctx, email)
+//	func (j *EmailJob) Execute(ctx context.Context) error {
+//	    // Send email
+//	    return nil
 //	}
 //
-// Enqueue a job:
+//	// Enqueue
+//	client := asynq.NewClient(asynq.RedisClientOpt{Addr: "localhost:6379"})
+//	task := asynq.NewTask("email:send", payload)
+//	client.Enqueue(task)
 //
-//	payload, _ := json.Marshal(EmailPayload{To: "user@example.com", Subject: "Hello"})
-//	err := queue.Enqueue(ctx, "email:send", payload)
-//
-// # Requirements
-//
-// This package implements the following requirements:
-//   - R5.2.1: Built-in job queue using Asynq (Redis-backed)
-//   - R5.2.2: Job handler scaffolding support
-//   - R5.2.3: Job scheduling with cron-like syntax
-//   - R5.2.4: Job retry with exponential backoff
-//   - R5.2.5: Web UI for job monitoring (via Asynq inspector)
+// See README.md for complete examples and migration guide.
 package jobs
