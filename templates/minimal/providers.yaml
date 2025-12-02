@@ -1,0 +1,23 @@
+# Gothic Forge Provider Configuration - Minimal Template
+# This template uses minimal providers for simple deployments
+
+database:
+  provider: none  # No database needed for minimal template
+  
+cache:
+  provider: none  # No cache needed for minimal template
+  
+compute:
+  provider: leapcell  # Deploy to Leapcell for production
+  options:
+    region: global
+    replicas: 1
+    
+cdn:
+  provider: cloudflare  # Optional: Use Cloudflare for CDN
+  options:
+    zone: auto
+
+# To add providers later:
+# - Database: Change 'none' to 'postgresql', 'cockroachdb', or 'sqlite'
+# - Cache: Change 'none' to 'valkey' or 'redis'

@@ -1,0 +1,42 @@
+# Gothic Forge Provider Configuration - SaaS Template
+# This template requires database and cache for full functionality
+
+database:
+  provider: cockroachdb  # cockroachdb or postgresql (required)
+  options:
+    region: us-east-1
+    tier: serverless
+  
+cache:
+  provider: valkey  # valkey or redis (required for sessions)
+  options:
+    region: us-east-1
+    tier: startup
+    
+compute:
+  provider: leapcell  # leapcell or docker
+  options:
+    region: global
+    replicas: 2  # Start with 2 replicas for high availability
+    
+cdn:
+  provider: cloudflare  # cloudflare (recommended)
+  options:
+    zone: auto
+
+# SaaS applications require:
+# - Database: User data, subscriptions, sessions
+# - Cache: Session storage, rate limiting
+# - Compute: Application server with auto-scaling
+# - CDN: Static assets and global distribution
+
+# For local development:
+# - Use postgresql for database
+# - Use redis for cache (docker: redis:alpine)
+# - Use docker for compute
+
+# For production:
+# - Use cockroachdb for database (serverless, globally distributed)
+# - Use valkey for cache (managed, high availability)
+# - Use leapcell for compute (auto-scaling, zero-downtime deploys)
+# - Use cloudflare for CDN (DDoS protection, edge caching)

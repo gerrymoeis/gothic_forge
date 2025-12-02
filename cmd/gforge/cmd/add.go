@@ -14,13 +14,13 @@ import (
 
 var addCmd = &cobra.Command{
     Use:   "add",
-    Short: "Scaffold features in app/ (page, api, handler, model, edge, component, auth, etc.)",
+    Short: "Scaffold features in app/ (page, api, handler, model, edge, component, auth, job, etc.)",
     Args:  cobra.MinimumNArgs(1),
     RunE: func(cmd *cobra.Command, args []string) error {
         banner()
         kind := strings.ToLower(args[0])
         var name string
-        if kind == "page" || kind == "component" || kind == "oauth" || kind == "db" || kind == "module" || kind == "crud" || kind == "resource" || kind == "migration" || kind == "cruddb" || kind == "api" || kind == "handler" || kind == "model" || kind == "edge" {
+        if kind == "page" || kind == "component" || kind == "oauth" || kind == "db" || kind == "module" || kind == "crud" || kind == "resource" || kind == "migration" || kind == "cruddb" || kind == "api" || kind == "handler" || kind == "model" || kind == "edge" || kind == "job" || kind == "email" {
             if len(args) < 2 {
                 printAddUsage()
                 return nil
@@ -69,6 +69,14 @@ var addCmd = &cobra.Command{
             fields := []string{}
             if len(args) > 2 { fields = args[2:] }
             return scaffoldCRUDDB(name, fields)
+        case "job":
+            return scaffoldJob(name)
+        case "email":
+            provider := "sendgrid" // default
+            if len(args) > 2 {
+                provider = args[2]
+            }
+            return scaffoldEmail(name, provider)
         default:
             printAddUsage()
             return nil
@@ -103,11 +111,20 @@ func printAddUsage() {
     fmt.Println("  gforge add auth                   - Add login/logout routes")
     fmt.Println("  gforge add oauth <provider>       - Add OAuth provider routes")
     fmt.Println()
+    fmt.Println("⚙️  Background Jobs:")
+    fmt.Println("  gforge add job <name>             - Add background job handler")
+    fmt.Println()
+    fmt.Println("📧 Email:")
+    fmt.Println("  gforge add email <template> [provider]  - Add email template (default: sendgrid)")
+    fmt.Println()
     fmt.Println("Examples:")
     fmt.Println("  gforge add api users GET")
     fmt.Println("  gforge add model Post title:string body:text")
     fmt.Println("  gforge add edge /api/hello POST")
     fmt.Println("  gforge add cruddb Article title:string content:text")
+    fmt.Println("  gforge add job SendWelcomeEmail")
+    fmt.Println("  gforge add email welcome sendgrid")
+    fmt.Println("  gforge add email password-reset mailgun")
 }
 
 // scaffoldOAuth creates placeholder OAuth routes for a provider.
@@ -575,6 +592,168 @@ func AuthLogin() templ.Component {
     fmt.Println("Added auth routes: /login, /logout")
     fmt.Printf("  - %s\n", routePath)
     fmt.Printf("  - %s\n", tmplPath)
+    return nil
+}
+
+// scaffoldJob creates a background job handler in internal/jobs.
+// Example: gforge add job SendWelcomeEmail
+func scaffoldJob(name string) error {
+    // Ensure PascalCase
+    pas := name
+    if !strings.Contains(name, "-") && !strings.Contains(name, "_") {
+        // Already in PascalCase or single word
+        pas = strings.ToUpper(name[:1]) + name[1:]
+    } else {
+        pas = pascalCase(name)
+    }
+    
+    // Convert PascalCase to snake_case for file names
+    snake := ""
+    for i, r := range pas {
+        if i > 0 && r >= 'A' && r <= 'Z' {
+            snake += "_"
+        }
+        snake += string(r)
+    }
+    snake = strings.ToLower(snake)
+    
+    // Convert snake_case to colon-separated for job type
+    jobType := strings.ReplaceAll(snake, "_", ":")
+    
+    // Create job file
+    jobPath := filepath.Join("internal", "jobs", fmt.Sprintf("%s.go", snake))
+    jobSrc := fmt.Sprintf(`package jobs
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+)
+
+// %[1]s is a background job that handles %[2]s.
+//
+// Example usage:
+//
+//	payload, _ := json.Marshal(%[1]sPayload{
+//	    // Add your fields here
+//	})
+//	queue.Enqueue(ctx, "%[3]s", payload)
+type %[1]s struct{}
+
+// %[1]sPayload contains the data needed for %[2]s.
+type %[1]sPayload struct {
+	// Add your payload fields here
+	// Example: UserID int64 ` + "`json:\"user_id\"`" + `
+}
+
+// Type returns the job type identifier.
+func (j *%[1]s) Type() string {
+	return "%[3]s"
+}
+
+// Handle processes the %[2]s job.
+func (j *%[1]s) Handle(ctx context.Context, payload []byte) error {
+	var data %[1]sPayload
+	if err := json.Unmarshal(payload, &data); err != nil {
+		return fmt.Errorf("invalid %[2]s payload: %%w", err)
+	}
+
+	// TODO: Implement your job logic here
+	log.Printf("Processing %[2]s job: %%+v", data)
+
+	// Example: Send email, call API, process data, etc.
+	
+	return nil
+}
+`, pas, name, jobType)
+    
+    if err := execx.WriteFileIfMissing(jobPath, []byte(jobSrc), 0o644); err != nil {
+        return err
+    }
+
+    // Create test file
+    testPath := filepath.Join("internal", "jobs", fmt.Sprintf("%s_test.go", snake))
+    testSrc := fmt.Sprintf(`package jobs
+
+import (
+	"context"
+	"encoding/json"
+	"testing"
+)
+
+// Test%[1]s tests the %[1]s handler.
+func Test%[1]s(t *testing.T) {
+	job := &%[1]s{}
+	ctx := context.Background()
+
+	tests := []struct {
+		name    string
+		payload %[1]sPayload
+		wantErr bool
+	}{
+		{
+			name: "valid payload",
+			payload: %[1]sPayload{
+				// Add test data here
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			payload, err := json.Marshal(tt.payload)
+			if err != nil {
+				t.Fatalf("failed to marshal payload: %%v", err)
+			}
+
+			err = job.Handle(ctx, payload)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Handle() error = %%v, wantErr %%v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+// Test%[1]sInvalidPayload tests error handling for invalid payloads.
+func Test%[1]sInvalidPayload(t *testing.T) {
+	job := &%[1]s{}
+	ctx := context.Background()
+
+	// Invalid JSON
+	err := job.Handle(ctx, []byte("invalid json"))
+	if err == nil {
+		t.Error("Handle() expected error for invalid JSON, got nil")
+	}
+}
+
+// Test%[1]sType tests the job type identifier.
+func Test%[1]sType(t *testing.T) {
+	job := &%[1]s{}
+	want := "%[2]s"
+	if got := job.Type(); got != want {
+		t.Errorf("Type() = %%v, want %%v", got, want)
+	}
+}
+`, pas, jobType)
+    
+    if err := execx.WriteFileIfMissing(testPath, []byte(testSrc), 0o644); err != nil {
+        return err
+    }
+
+    fmt.Printf("Added background job: %s\n", pas)
+    fmt.Printf("  - %s\n", jobPath)
+    fmt.Printf("  - %s\n", testPath)
+    fmt.Println()
+    fmt.Println("Next steps:")
+    fmt.Println("  1. Edit the payload struct in", jobPath)
+    fmt.Println("  2. Implement the job logic in Handle()")
+    fmt.Println("  3. Register the job with your worker:")
+    fmt.Printf("     worker.Register(&jobs.%s{})\n", pas)
+    fmt.Println("  4. Enqueue jobs from your application:")
+    fmt.Printf("     queue.Enqueue(ctx, \"%s\", payload)\n", jobType)
+    
     return nil
 }
 
@@ -1180,4 +1359,438 @@ export async function onRequestOptions(context) {
     fmt.Println("  2. Export: gforge export")
     fmt.Println("  3. Deploy: gforge deploy pages --run")
     return nil
+}
+
+// scaffoldEmail creates an email template with provider-specific configuration.
+// Example: gforge add email welcome --provider=sendgrid
+func scaffoldEmail(name string, provider string) error {
+	keb := kebabCase(name)
+	pas := pascalCase(name)
+	snake := ""
+	for i, r := range pas {
+		if i > 0 && r >= 'A' && r <= 'Z' {
+			snake += "_"
+		}
+		snake += string(r)
+	}
+	snake = strings.ToLower(snake)
+
+	// Default to sendgrid if no provider specified
+	if provider == "" {
+		provider = "sendgrid"
+	}
+
+	// Validate provider
+	validProviders := map[string]bool{
+		"sendgrid": true,
+		"mailgun":  true,
+		"ses":      true,
+		"smtp":     true,
+	}
+	if !validProviders[provider] {
+		return fmt.Errorf("invalid provider: %s (valid: sendgrid, mailgun, ses, smtp)", provider)
+	}
+
+	// Create email templates directory
+	emailDir := filepath.Join("app", "email")
+	if err := os.MkdirAll(emailDir, 0o755); err != nil {
+		return err
+	}
+
+	// Create email template file
+	emailPath := filepath.Join(emailDir, fmt.Sprintf("%s.go", snake))
+	emailSrc := fmt.Sprintf(`package email
+
+import (
+	"context"
+	"fmt"
+	"os"
+
+	"gothicforge3/internal/email"
+)
+
+// %[1]s represents the data needed for the %[2]s email.
+type %[1]sData struct {
+	// Add your template data fields here
+	// Example: Name string, VerificationURL string, etc.
+}
+
+// Send%[1]s sends a %[2]s email to the specified recipient.
+//
+// Example usage:
+//
+//	data := %[1]sData{
+//	    // Fill in your data
+//	}
+//	err := Send%[1]s(ctx, "user@example.com", data)
+func Send%[1]s(ctx context.Context, to string, data %[1]sData) error {
+	// Initialize email provider
+	provider, err := initEmailProvider()
+	if err != nil {
+		return fmt.Errorf("failed to initialize email provider: %%w", err)
+	}
+
+	// Build email content
+	subject := "%[3]s"
+	htmlBody := build%[1]sHTML(data)
+	textBody := build%[1]sText(data)
+
+	// Create email
+	msg := &email.Email{
+		From:    os.Getenv("EMAIL_FROM"),
+		To:      []string{to},
+		Subject: subject,
+		HTML:    htmlBody,
+		Text:    textBody,
+	}
+
+	// Validate email
+	if err := msg.Validate(); err != nil {
+		return fmt.Errorf("invalid email: %%w", err)
+	}
+
+	// Send email
+	if err := provider.Send(ctx, msg); err != nil {
+		return fmt.Errorf("failed to send email: %%w", err)
+	}
+
+	return nil
+}
+
+// build%[1]sHTML generates the HTML version of the email.
+func build%[1]sHTML(data %[1]sData) string {
+	// TODO: Implement your HTML email template
+	// You can use html/template or a templating library
+	return ` + "`" + `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>%[3]s</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .content {
+            background: #ffffff;
+            padding: 30px;
+            border: 1px solid #e0e0e0;
+            border-top: none;
+        }
+        .footer {
+            background: #f5f5f5;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            border-radius: 0 0 8px 8px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>%[3]s</h1>
+    </div>
+    <div class="content">
+        <p>Hello,</p>
+        <p>This is your %[2]s email.</p>
+        <!-- TODO: Add your email content here -->
+        <p>Best regards,<br>Your Team</p>
+    </div>
+    <div class="footer">
+        <p>&copy; 2024 Your Company. All rights reserved.</p>
+    </div>
+</body>
+</html>
+` + "`" + `
+}
+
+// build%[1]sText generates the plain text version of the email.
+func build%[1]sText(data %[1]sData) string {
+	// TODO: Implement your plain text email template
+	return ` + "`" + `
+%[3]s
+
+Hello,
+
+This is your %[2]s email.
+
+TODO: Add your email content here
+
+Best regards,
+Your Team
+
+---
+© 2024 Your Company. All rights reserved.
+` + "`" + `
+}
+`, pas, keb, strings.Title(strings.ReplaceAll(keb, "-", " ")))
+
+	if err := execx.WriteFileIfMissing(emailPath, []byte(emailSrc), 0o644); err != nil {
+		return err
+	}
+
+	// Create test file
+	testPath := filepath.Join(emailDir, fmt.Sprintf("%s_test.go", snake))
+	testSrc := fmt.Sprintf(`package email
+
+import (
+	"testing"
+)
+
+// Test%[1]s tests the %[1]s email template.
+func Test%[1]s(t *testing.T) {
+	// Skip if no email provider is configured
+	if _, err := initEmailProvider(); err != nil {
+		t.Skip("No email provider configured")
+	}
+
+	data := %[1]sData{
+		// Add test data here
+	}
+
+	// Test HTML generation
+	html := build%[1]sHTML(data)
+	if html == "" {
+		t.Error("HTML body should not be empty")
+	}
+	if len(html) < 100 {
+		t.Error("HTML body seems too short")
+	}
+
+	// Test text generation
+	text := build%[1]sText(data)
+	if text == "" {
+		t.Error("Text body should not be empty")
+	}
+	if len(text) < 50 {
+		t.Error("Text body seems too short")
+	}
+
+	// Note: Actual sending is not tested to avoid sending real emails
+	// To test sending, set up a test email provider (e.g., MailHog)
+	t.Log("Email template generated successfully")
+}
+
+// Test%[1]sValidation tests email validation.
+func Test%[1]sValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		to      string
+		wantErr bool
+	}{
+		{
+			name:    "valid email",
+			to:      "test@example.com",
+			wantErr: false,
+		},
+		{
+			name:    "empty email",
+			to:      "",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// This would require a mock provider to test properly
+			// For now, just test the template generation
+			data := %[1]sData{}
+			html := build%[1]sHTML(data)
+			text := build%[1]sText(data)
+			
+			if html == "" || text == "" {
+				t.Error("Template generation failed")
+			}
+		})
+	}
+}
+`, pas)
+
+	if err := execx.WriteFileIfMissing(testPath, []byte(testSrc), 0o644); err != nil {
+		return err
+	}
+
+	// Create example usage file
+	examplePath := filepath.Join(emailDir, fmt.Sprintf("%s_example.go", snake))
+	exampleSrc := fmt.Sprintf(`package email
+
+import (
+	"context"
+	"log"
+)
+
+// Example%[1]s demonstrates how to use the %[1]s email template.
+func Example%[1]s() {
+	ctx := context.Background()
+
+	// Prepare email data
+	data := %[1]sData{
+		// Fill in your data fields
+		// Example: Name: "John Doe", VerificationURL: "https://example.com/verify/abc123"
+	}
+
+	// Send email
+	err := Send%[1]s(ctx, "user@example.com", data)
+	if err != nil {
+		log.Printf("Failed to send %[2]s email: %%v", err)
+		return
+	}
+
+	log.Println("%[3]s email sent successfully")
+}
+`, pas, keb, strings.Title(strings.ReplaceAll(keb, "-", " ")))
+
+	if err := execx.WriteFileIfMissing(examplePath, []byte(exampleSrc), 0o644); err != nil {
+		return err
+	}
+
+	// Create README if it doesn't exist
+	readmePath := filepath.Join(emailDir, "README.md")
+	readmeSrc := `# Email Templates
+
+This directory contains email templates for the application.
+
+## Usage
+
+Each email template is a Go package that provides:
+- A data structure for template variables
+- A Send function to send the email
+- HTML and text versions of the email
+- Tests and examples
+
+## Sending Emails
+
+` + "```go" + `
+import "yourapp/app/email"
+
+// Send an email
+data := email.WelcomeData{
+    Name: "John Doe",
+}
+err := email.SendWelcome(ctx, "user@example.com", data)
+` + "```" + `
+
+## Configuration
+
+Set one of the following environment variables:
+
+### SendGrid
+` + "```" + `
+SENDGRID_API_KEY=your-api-key
+EMAIL_FROM=noreply@example.com
+` + "```" + `
+
+### Mailgun
+` + "```" + `
+MAILGUN_DOMAIN=mg.example.com
+MAILGUN_API_KEY=your-api-key
+EMAIL_FROM=noreply@example.com
+` + "```" + `
+
+### AWS SES
+` + "```" + `
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your-access-key
+AWS_SECRET_ACCESS_KEY=your-secret-key
+EMAIL_FROM=noreply@example.com
+` + "```" + `
+
+### SMTP
+` + "```" + `
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+SMTP_USE_TLS=true
+EMAIL_FROM=noreply@example.com
+` + "```" + `
+
+## Testing
+
+For local testing, use MailHog:
+
+` + "```bash" + `
+docker run -d -p 1025:1025 -p 8025:8025 mailhog/mailhog
+` + "```" + `
+
+Then configure SMTP:
+` + "```" + `
+SMTP_HOST=localhost
+SMTP_PORT=1025
+EMAIL_FROM=test@example.com
+` + "```" + `
+
+View emails at http://localhost:8025
+
+## Adding New Templates
+
+` + "```bash" + `
+gforge add email <template-name> --provider=<provider>
+` + "```" + `
+
+Example:
+` + "```bash" + `
+gforge add email welcome --provider=sendgrid
+gforge add email password-reset --provider=mailgun
+` + "```" + `
+`
+
+	if err := execx.WriteFileIfMissing(readmePath, []byte(readmeSrc), 0o644); err != nil {
+		return err
+	}
+
+	fmt.Printf("Added email template: %s\n", pas)
+	fmt.Printf("  - %s\n", emailPath)
+	fmt.Printf("  - %s\n", testPath)
+	fmt.Printf("  - %s\n", examplePath)
+	if _, err := os.Stat(readmePath); os.IsNotExist(err) {
+		fmt.Printf("  - %s\n", readmePath)
+	}
+	fmt.Println()
+	fmt.Println("Next steps:")
+	fmt.Println("  1. Configure email provider in .env:")
+	switch provider {
+	case "sendgrid":
+		fmt.Println("     SENDGRID_API_KEY=your-api-key")
+	case "mailgun":
+		fmt.Println("     MAILGUN_DOMAIN=mg.example.com")
+		fmt.Println("     MAILGUN_API_KEY=your-api-key")
+	case "ses":
+		fmt.Println("     AWS_REGION=us-east-1")
+		fmt.Println("     AWS_ACCESS_KEY_ID=your-access-key")
+		fmt.Println("     AWS_SECRET_ACCESS_KEY=your-secret-key")
+	case "smtp":
+		fmt.Println("     SMTP_HOST=smtp.gmail.com")
+		fmt.Println("     SMTP_PORT=587")
+		fmt.Println("     SMTP_USERNAME=your-email@gmail.com")
+		fmt.Println("     SMTP_PASSWORD=your-app-password")
+	}
+	fmt.Println("     EMAIL_FROM=noreply@example.com")
+	fmt.Println("  2. Customize email template in " + emailPath)
+	fmt.Println("  3. Add template data fields to " + pas + "Data struct")
+	fmt.Println("  4. Test with: go test ./app/email/...")
+	return nil
 }

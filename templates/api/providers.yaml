@@ -1,0 +1,40 @@
+# Gothic Forge Provider Configuration - API Template
+# This template requires a database for API data
+
+database:
+  provider: cockroachdb  # cockroachdb, postgresql, or sqlite (dev only)
+  options:
+    region: us-east-1
+    tier: serverless
+  
+cache:
+  provider: valkey  # valkey, redis, or none (recommended for rate limiting)
+  options:
+    region: us-east-1
+    tier: startup
+    
+compute:
+  provider: leapcell  # leapcell or docker
+  options:
+    region: global
+    replicas: 2  # Multiple replicas for high availability
+    
+cdn:
+  provider: none  # APIs typically don't need CDN
+
+# API applications typically need:
+# - Database: Store API data, users, API keys
+# - Cache: Rate limiting, response caching
+# - Compute: API server with auto-scaling
+# - CDN: Not needed (APIs serve JSON, not static assets)
+
+# For local development:
+# - Use postgresql for database
+# - Use redis for cache (optional)
+# - Use docker for compute
+
+# For production:
+# - Use cockroachdb for database (globally distributed, low latency)
+# - Use valkey for cache (rate limiting, session storage)
+# - Use leapcell for compute (auto-scaling, zero-downtime deploys)
+# - CDN not needed for JSON APIs

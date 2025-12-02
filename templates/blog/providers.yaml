@@ -1,0 +1,36 @@
+# Gothic Forge Provider Configuration - Blog Template
+# This template requires a database for storing posts
+
+database:
+  provider: cockroachdb  # cockroachdb, postgresql, or sqlite (dev only)
+  options:
+    region: us-east-1
+    tier: serverless
+  
+cache:
+  provider: valkey  # valkey, redis, or none (recommended for performance)
+  options:
+    region: us-east-1
+    tier: startup
+    
+compute:
+  provider: leapcell  # leapcell or docker
+  options:
+    region: global
+    replicas: 1
+    
+cdn:
+  provider: cloudflare  # cloudflare or none
+  options:
+    zone: auto
+
+# For local development:
+# - Use sqlite for database (no setup required)
+# - Use none for cache (optional)
+# - Use docker for compute (local testing)
+
+# For production:
+# - Use cockroachdb for database (serverless, scalable)
+# - Use valkey for cache (performance boost)
+# - Use leapcell for compute (easy deployment)
+# - Use cloudflare for CDN (global distribution)
