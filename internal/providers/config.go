@@ -12,13 +12,11 @@ import (
 type Config struct {
 	Database DatabaseConfig `yaml:"database"`
 	Cache    CacheConfig    `yaml:"cache"`
-	Compute  ComputeConfig  `yaml:"compute"`
-	CDN      CDNConfig      `yaml:"cdn"`
 }
 
 // DatabaseConfig contains database provider configuration
 type DatabaseConfig struct {
-	Provider string                 `yaml:"provider"` // cockroachdb, postgresql, sqlite
+	Provider string                 `yaml:"provider"` // postgresql
 	Options  map[string]interface{} `yaml:"options"`
 }
 
@@ -28,24 +26,10 @@ type CacheConfig struct {
 	Options  map[string]interface{} `yaml:"options"`
 }
 
-// ComputeConfig contains compute provider configuration
-type ComputeConfig struct {
-	Provider string                 `yaml:"provider"` // leapcell, docker, aws-ecs
-	Options  map[string]interface{} `yaml:"options"`
-}
-
-// CDNConfig contains CDN provider configuration
-type CDNConfig struct {
-	Provider string                 `yaml:"provider"` // cloudflare, none
-	Options  map[string]interface{} `yaml:"options"`
-}
-
 // LoadConfig loads provider configuration from a YAML file
 // Environment variables can override the provider selection:
 //   - GFORGE_DB_PROVIDER
 //   - GFORGE_CACHE_PROVIDER
-//   - GFORGE_COMPUTE_PROVIDER
-//   - GFORGE_CDN_PROVIDER
 func LoadConfig(path string) (*Config, error) {
 	// Read file
 	data, err := os.ReadFile(path)
@@ -65,12 +49,6 @@ func LoadConfig(path string) (*Config, error) {
 	}
 	if cacheProvider := strings.TrimSpace(os.Getenv("GFORGE_CACHE_PROVIDER")); cacheProvider != "" {
 		cfg.Cache.Provider = cacheProvider
-	}
-	if computeProvider := strings.TrimSpace(os.Getenv("GFORGE_COMPUTE_PROVIDER")); computeProvider != "" {
-		cfg.Compute.Provider = computeProvider
-	}
-	if cdnProvider := strings.TrimSpace(os.Getenv("GFORGE_CDN_PROVIDER")); cdnProvider != "" {
-		cfg.CDN.Provider = cdnProvider
 	}
 
 	// Validate configuration
@@ -95,21 +73,6 @@ func (c *Config) Validate() error {
 	if c.Cache.Provider != "" && c.Cache.Provider != "none" {
 		if _, err := DefaultRegistry.GetCache(c.Cache.Provider); err != nil {
 			return fmt.Errorf("invalid cache provider: %w", err)
-		}
-	}
-
-	// Validate compute provider
-	if c.Compute.Provider == "" {
-		return fmt.Errorf("compute provider is required")
-	}
-	if _, err := DefaultRegistry.GetCompute(c.Compute.Provider); err != nil {
-		return fmt.Errorf("invalid compute provider: %w", err)
-	}
-
-	// Validate CDN provider (optional, can be "none")
-	if c.CDN.Provider != "" && c.CDN.Provider != "none" {
-		if _, err := DefaultRegistry.GetCDN(c.CDN.Provider); err != nil {
-			return fmt.Errorf("invalid CDN provider: %w", err)
 		}
 	}
 
@@ -151,34 +114,22 @@ func GetBool(options map[string]interface{}, key string, defaultValue bool) bool
 	return defaultValue
 }
 
-// DefaultConfig returns the default Opinionated Stack configuration
+// DefaultConfig returns the default configuration
 func DefaultConfig() *Config {
 	return &Config{
 		Database: DatabaseConfig{
-			Provider: "cockroachdb",
+			Provider: "postgresql",
 			Options: map[string]interface{}{
-				"region": "us-east-1",
-				"tier":   "serverless",
+				"host":     "localhost",
+				"port":     5432,
+				"database": "gothic_forge",
 			},
 		},
 		Cache: CacheConfig{
-			Provider: "valkey",
+			Provider: "redis",
 			Options: map[string]interface{}{
-				"region": "us-east-1",
-				"tier":   "startup",
-			},
-		},
-		Compute: ComputeConfig{
-			Provider: "leapcell",
-			Options: map[string]interface{}{
-				"region":   "global",
-				"replicas": 1,
-			},
-		},
-		CDN: CDNConfig{
-			Provider: "cloudflare",
-			Options: map[string]interface{}{
-				"zone": "auto",
+				"host": "localhost",
+				"port": 6379,
 			},
 		},
 	}

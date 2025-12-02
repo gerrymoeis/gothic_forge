@@ -2,6 +2,8 @@ package cmd
 
 import (
   "bufio"
+  "crypto/rand"
+  "encoding/hex"
   "fmt"
   "os"
   "path/filepath"
@@ -15,6 +17,15 @@ var (
   secretsGet string
   secretsGenJWT bool
 )
+
+// genSecret generates a random hex string of the specified length
+func genSecret(length int) (string, error) {
+	bytes := make([]byte, length)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
+}
 
 var secretsCmd = &cobra.Command{
   Use:   "secrets",
@@ -56,7 +67,10 @@ var secretsCmd = &cobra.Command{
     if secretsGenJWT {
       v := strings.TrimSpace(kv["JWT_SECRET"])
       if v == "" || len(v) < 32 || strings.EqualFold(v, "devsecret-change-me") {
-        newSecret := genSecret()
+        newSecret, err := genSecret(32)
+        if err != nil {
+          return fmt.Errorf("failed to generate secret: %w", err)
+        }
         kv["JWT_SECRET"] = newSecret
         // Rewrite .env
         b := &strings.Builder{}

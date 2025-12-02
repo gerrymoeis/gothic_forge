@@ -16,6 +16,55 @@ var (
   oauthPrintOnly      bool
 )
 
+// loadEnvFile reads a .env file and returns a map of key-value pairs
+func loadEnvFile(path string) map[string]string {
+	kv := make(map[string]string)
+	f, err := os.Open(path)
+	if err != nil {
+		return kv
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) == 2 {
+			kv[strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
+		}
+	}
+	return kv
+}
+
+// normalizeBaseURL ensures the base URL doesn't end with a slash
+func normalizeBaseURL(base string) string {
+	return strings.TrimRight(base, "/")
+}
+
+// updateEnvFileInPlace updates or adds key-value pairs in a .env file
+func updateEnvFileInPlace(path string, updates map[string]string) error {
+	existing := loadEnvFile(path)
+	for k, v := range updates {
+		existing[k] = v
+	}
+
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	for k, v := range existing {
+		if _, err := fmt.Fprintf(f, "%s=%s\n", k, v); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 var oauthCmd = &cobra.Command{
   Use:   "oauth",
   Short: "OAuth helpers (GitHub)",

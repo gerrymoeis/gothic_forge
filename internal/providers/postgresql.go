@@ -43,6 +43,14 @@ type PostgreSQLProvider struct {
 	sslMode  string
 }
 
+// getEnvOrDefault returns the environment variable value or a default
+func getEnvOrDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
 // NewPostgreSQLProvider creates a new PostgreSQL provider.
 // It reads configuration from environment variables.
 func NewPostgreSQLProvider() *PostgreSQLProvider {

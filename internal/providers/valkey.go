@@ -17,6 +17,51 @@ import (
 
 const aivenAPIBase = "https://api.aiven.io/v1"
 
+// retryConfig contains retry configuration
+type retryConfig struct {
+	maxRetries int
+	delay      time.Duration
+	maxDelay   time.Duration
+}
+
+// defaultRetryConfig returns the default retry configuration
+func defaultRetryConfig() retryConfig {
+	return retryConfig{
+		maxRetries: 3,
+		delay:      time.Second,
+		maxDelay:   10 * time.Second,
+	}
+}
+
+// retryWithBackoff executes a function with exponential backoff retry logic
+func retryWithBackoff(ctx context.Context, cfg retryConfig, fn func() error) error {
+	var lastErr error
+	delay := cfg.delay
+
+	for i := 0; i <= cfg.maxRetries; i++ {
+		if i > 0 {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(delay):
+				// Exponential backoff
+				delay *= 2
+				if delay > cfg.maxDelay {
+					delay = cfg.maxDelay
+				}
+			}
+		}
+
+		if err := fn(); err != nil {
+			lastErr = err
+			continue
+		}
+		return nil
+	}
+
+	return fmt.Errorf("failed after %d retries: %w", cfg.maxRetries, lastErr)
+}
+
 // ValkeyProvider implements CacheProvider for Valkey (Redis-compatible cache via Aiven).
 //
 // This provider supports automatic Valkey instance provisioning via the Aiven API.
@@ -313,10 +358,9 @@ func (p *ValkeyProvider) waitForServiceReady(ctx context.Context, serviceName st
 
 	// Use a smaller retry config for polling operations
 	pollRetryConfig := retryConfig{
-		maxRetries:        2,
-		initialBackoff:    500 * time.Millisecond,
-		maxBackoff:        2 * time.Second,
-		backoffMultiplier: 2.0,
+		maxRetries: 2,
+		delay:      500 * time.Millisecond,
+		maxDelay:   2 * time.Second,
 	}
 
 	for {

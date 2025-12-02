@@ -6,13 +6,11 @@ import (
 	"sync"
 )
 
-// Registry manages available providers for databases, caches, compute, and CDN.
+// Registry manages available providers for databases and caches.
 // It provides thread-safe registration and retrieval of providers.
 type Registry struct {
 	databases map[string]DatabaseProvider
 	caches    map[string]CacheProvider
-	computes  map[string]ComputeProvider
-	cdns      map[string]CDNProvider
 	mu        sync.RWMutex
 }
 
@@ -21,8 +19,6 @@ func NewRegistry() *Registry {
 	return &Registry{
 		databases: make(map[string]DatabaseProvider),
 		caches:    make(map[string]CacheProvider),
-		computes:  make(map[string]ComputeProvider),
-		cdns:      make(map[string]CDNProvider),
 	}
 }
 
@@ -90,76 +86,6 @@ func (r *Registry) ListCaches() []string {
 func (r *Registry) listCachesUnsafe() []string {
 	names := make([]string, 0, len(r.caches))
 	for name := range r.caches {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	return names
-}
-
-// RegisterCompute registers a compute provider
-func (r *Registry) RegisterCompute(name string, provider ComputeProvider) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	r.computes[name] = provider
-}
-
-// GetCompute retrieves a compute provider by name
-func (r *Registry) GetCompute(name string) (ComputeProvider, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	provider, ok := r.computes[name]
-	if !ok {
-		return nil, fmt.Errorf("compute provider %q not found (available: %v)", name, r.listComputesUnsafe())
-	}
-	return provider, nil
-}
-
-// ListComputes returns all registered compute provider names
-func (r *Registry) ListComputes() []string {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	return r.listComputesUnsafe()
-}
-
-func (r *Registry) listComputesUnsafe() []string {
-	names := make([]string, 0, len(r.computes))
-	for name := range r.computes {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	return names
-}
-
-// RegisterCDN registers a CDN provider
-func (r *Registry) RegisterCDN(name string, provider CDNProvider) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	r.cdns[name] = provider
-}
-
-// GetCDN retrieves a CDN provider by name
-func (r *Registry) GetCDN(name string) (CDNProvider, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	provider, ok := r.cdns[name]
-	if !ok {
-		return nil, fmt.Errorf("CDN provider %q not found (available: %v)", name, r.listCDNsUnsafe())
-	}
-	return provider, nil
-}
-
-// ListCDNs returns all registered CDN provider names
-func (r *Registry) ListCDNs() []string {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	return r.listCDNsUnsafe()
-}
-
-func (r *Registry) listCDNsUnsafe() []string {
-	names := make([]string, 0, len(r.cdns))
-	for name := range r.cdns {
 		names = append(names, name)
 	}
 	sort.Strings(names)
