@@ -1,7 +1,6 @@
 package email
 
 import (
-	"context"
 	"fmt"
 	"os"
 
@@ -10,7 +9,7 @@ import (
 
 // initEmailProvider initializes the email provider based on environment variables.
 // In development mode (APP_ENV=development), it automatically uses MailHog if available.
-// Otherwise, it tries each provider in order: SendGrid, Mailgun, AWS SES, SMTP.
+// Otherwise, it uses SMTP configuration.
 func initEmailProvider() (email.EmailProvider, error) {
 	// In development mode, use MailHog if available
 	appEnv := os.Getenv("APP_ENV")
@@ -22,21 +21,11 @@ func initEmailProvider() (email.EmailProvider, error) {
 			if err == nil {
 				return provider, nil
 			}
-			// If MailHog fails, fall through to other providers
+			// If MailHog fails, fall through to SMTP
 		}
 	}
 
-	// Try to initialize based on available credentials
-	if apiKey := os.Getenv("SENDGRID_API_KEY"); apiKey != "" {
-		return email.NewSendGridProvider(apiKey)
-	}
-	if domain := os.Getenv("MAILGUN_DOMAIN"); domain != "" {
-		apiKey := os.Getenv("MAILGUN_API_KEY")
-		return email.NewMailgunProvider(domain, apiKey)
-	}
-	if region := os.Getenv("AWS_REGION"); region != "" {
-		return email.NewSESProvider(context.Background(), region)
-	}
+	// Use SMTP configuration
 	if host := os.Getenv("SMTP_HOST"); host != "" {
 		port := 587
 		if p := os.Getenv("SMTP_PORT"); p != "" {
@@ -50,5 +39,5 @@ func initEmailProvider() (email.EmailProvider, error) {
 			UseTLS:   os.Getenv("SMTP_USE_TLS") != "false",
 		})
 	}
-	return nil, fmt.Errorf("no email provider configured (set SENDGRID_API_KEY, MAILGUN_DOMAIN, AWS_REGION, SMTP_HOST, or start MailHog for development)")
+	return nil, fmt.Errorf("no email provider configured (set SMTP_HOST or start MailHog for development)")
 }
