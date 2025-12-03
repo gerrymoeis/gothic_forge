@@ -101,3 +101,14 @@ PRODUCTION_STACK*.md
 RELEASE_NOTES*.md
 CHANGELOG_v*.md
 LEAPCELL_FIX*.md
+
+# Refactoring and temporary documentation
+PHASE*_COMPLETE.md
+PROGRESS_TRACKER.md
+REFACTORING_*.md
+ACTION_PLAN_*.md
+CODE_ANALYSIS_*.md
+ARCHITECTURE_COMPARISON_*.md
+*_verification.txt
+*_summary.txt
+*_report.txt
