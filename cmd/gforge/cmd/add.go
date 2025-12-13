@@ -12,6 +12,10 @@ import (
     "github.com/spf13/cobra"
 )
 
+var (
+    systemFlag string
+)
+
 var addCmd = &cobra.Command{
     Use:   "add",
     Short: "Scaffold features in app/ (page, api, handler, model, edge, component, auth, job, etc.)",
@@ -20,7 +24,7 @@ var addCmd = &cobra.Command{
         banner()
         kind := strings.ToLower(args[0])
         var name string
-        if kind == "page" || kind == "component" || kind == "oauth" || kind == "db" || kind == "module" || kind == "crud" || kind == "resource" || kind == "migration" || kind == "cruddb" || kind == "api" || kind == "handler" || kind == "model" || kind == "edge" || kind == "job" || kind == "email" {
+        if kind == "page" || kind == "component" || kind == "oauth" || kind == "db" || kind == "module" || kind == "crud" || kind == "resource" || kind == "migration" || kind == "cruddb" || kind == "api" || kind == "handler" || kind == "model" || kind == "edge" || kind == "job" || kind == "email" || kind == "form" {
             if len(args) < 2 {
                 printAddUsage()
                 return nil
@@ -32,7 +36,7 @@ var addCmd = &cobra.Command{
         }
         switch kind {
         case "page":
-            return scaffoldPage(name)
+            return scaffoldPage(name, systemFlag)
         case "api":
             method := "GET"
             if len(args) > 2 { method = strings.ToUpper(args[2]) }
@@ -48,7 +52,7 @@ var addCmd = &cobra.Command{
             if len(args) > 2 { method = strings.ToUpper(args[2]) }
             return scaffoldEdge(name, method)
         case "component":
-            return scaffoldComponent(name)
+            return scaffoldComponent(name, systemFlag)
         case "auth":
             return scaffoldAuth()
         case "oauth":
@@ -75,6 +79,8 @@ var addCmd = &cobra.Command{
                 provider = args[2]
             }
             return scaffoldEmail(name, provider)
+        case "form":
+            return scaffoldForm(name, systemFlag)
         default:
             printAddUsage()
             return nil
@@ -88,6 +94,9 @@ func printAddUsage() {
     fmt.Println("📄 Pages & UI:")
     fmt.Println("  gforge add page <name>            - Add HTML page with route")
     fmt.Println("  gforge add component <name>       - Add reusable component")
+    fmt.Println("  gforge add component <name> --system=webawesome - Add Web Awesome component")
+    fmt.Println("  gforge add form <name>            - Add form component")
+    fmt.Println("  gforge add form <name> --system=webawesome - Add Web Awesome form")
     fmt.Println()
     fmt.Println("🚀 API & Routes:")
     fmt.Println("  gforge add api <name> [method]    - Add API endpoint (default: GET)")
@@ -450,7 +459,7 @@ func scaffoldMigration(name string) error {
 // Example: gforge add resource Post title:string body:text
 func scaffoldResource(name string, fields []string) error {
     // Page and route
-    if err := scaffoldPage(name); err != nil { return err }
+    if err := scaffoldPage(name, ""); err != nil { return err }
 
     // Migration skeleton for Phase 2 (goose-style markers)
     keb := kebabCase(name)
@@ -589,7 +598,342 @@ func AuthLogin() templ.Component {
     return nil
 }
 
-func init() { rootCmd.AddCommand(addCmd) }
+func scaffoldWebAwesomeComponent(name string) error {
+    keb := kebabCase(name)
+    pas := pascalCase(name)
+    
+    // Create component file
+    compPath := filepath.Join("app", "templates", fmt.Sprintf("webawesome_%s.go", keb))
+    compSrc := fmt.Sprintf(`package templates
+
+import (
+    "context"
+    "io"
+    templ "github.com/a-h/templ"
+    "gothicforge3/internal/webawesome"
+)
+
+// %[1]sProps defines the properties for the %[1]s component
+type %[1]sProps struct {
+    ID       string
+    Class    string
+    Variant  string
+    Size     string
+    Disabled bool
+    // Add more properties as needed
+}
+
+// WebAwesome%[1]s creates a Web Awesome %[2]s component
+func WebAwesome%[1]s(props %[1]sProps) templ.Component {
+    return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+        // Create Web Awesome component
+        comp := webawesome.NewButtonComponent()
+        
+        // Set properties
+        if props.ID != "" {
+            comp.SetID(props.ID)
+        }
+        if props.Class != "" {
+            comp.SetClass(props.Class)
+        }
+        if props.Variant != "" {
+            comp.SetAttribute("variant", props.Variant)
+        }
+        if props.Size != "" {
+            comp.SetAttribute("size", props.Size)
+        }
+        if props.Disabled {
+            comp.SetAttribute("disabled", "true")
+        }
+        
+        // Set content
+        comp.SetContent("%[1]s Component")
+        
+        // Render component
+        html, err := comp.RenderHTML()
+        if err != nil {
+            return err
+        }
+        
+        _, err = io.WriteString(w, html)
+        return err
+    })
+}
+
+// %[1]sExample shows usage examples for the %[1]s component
+func %[1]sExample() templ.Component {
+    return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+        _, _ = io.WriteString(w, "<div class=\"space-y-4\">")
+        _, _ = io.WriteString(w, "<h3 class=\"text-lg font-semibold\">%[1]s Examples</h3>")
+        
+        // Default example
+        _, _ = io.WriteString(w, "<div class=\"example\">")
+        _, _ = io.WriteString(w, "<h4 class=\"font-medium\">Default</h4>")
+        defaultProps := %[1]sProps{}
+        _ = WebAwesome%[1]s(defaultProps).Render(ctx, w)
+        _, _ = io.WriteString(w, "</div>")
+        
+        // Primary variant example
+        _, _ = io.WriteString(w, "<div class=\"example\">")
+        _, _ = io.WriteString(w, "<h4 class=\"font-medium\">Primary</h4>")
+        primaryProps := %[1]sProps{Variant: "primary"}
+        _ = WebAwesome%[1]s(primaryProps).Render(ctx, w)
+        _, _ = io.WriteString(w, "</div>")
+        
+        // Disabled example
+        _, _ = io.WriteString(w, "<div class=\"example\">")
+        _, _ = io.WriteString(w, "<h4 class=\"font-medium\">Disabled</h4>")
+        disabledProps := %[1]sProps{Disabled: true}
+        _ = WebAwesome%[1]s(disabledProps).Render(ctx, w)
+        _, _ = io.WriteString(w, "</div>")
+        
+        _, _ = io.WriteString(w, "</div>")
+        return nil
+    })
+}
+`, pas, keb)
+    
+    if err := execx.WriteFileIfMissing(compPath, []byte(compSrc), 0o644); err != nil { 
+        return err 
+    }
+    
+    fmt.Printf("Added Web Awesome component: %s\n", pas)
+    fmt.Printf("  - %s\n", compPath)
+    fmt.Println()
+    fmt.Println("Usage in templates:")
+    fmt.Printf("  props := %sProps{Variant: \"primary\", Size: \"medium\"}\n", pas)
+    fmt.Printf("  _ = WebAwesome%s(props).Render(ctx, w)\n", pas)
+    return nil
+}
+
+func scaffoldForm(name string, system string) error {
+    keb := kebabCase(name)
+    pas := pascalCase(name)
+    
+    if system == "webawesome" {
+        return scaffoldWebAwesomeForm(name)
+    }
+    
+    // Default form scaffolding
+    formPath := filepath.Join("app", "templates", fmt.Sprintf("form_%s.go", keb))
+    formSrc := fmt.Sprintf(`package templates
+
+import (
+    "context"
+    "io"
+    templ "github.com/a-h/templ"
+)
+
+// %[1]sFormData represents the form data structure
+type %[1]sFormData struct {
+    Name        string
+    Email       string
+    Message     string
+    // Add more fields as needed
+}
+
+// %[1]sForm creates a form component
+func %[1]sForm(action string, data *%[1]sFormData, errors map[string]string) templ.Component {
+    if data == nil {
+        data = &%[1]sFormData{}
+    }
+    if errors == nil {
+        errors = make(map[string]string)
+    }
+    
+    return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+        _, _ = io.WriteString(w, "<form method=\"post\" action=\"" + action + "\" class=\"space-y-4\">")
+        
+        // Name field
+        _, _ = io.WriteString(w, "<div class=\"form-control\">")
+        _, _ = io.WriteString(w, "<label class=\"label\"><span class=\"label-text\">Name</span></label>")
+        _, _ = io.WriteString(w, "<input type=\"text\" name=\"name\" value=\"" + data.Name + "\" class=\"input input-bordered\" required>")
+        if err, exists := errors["name"]; exists {
+            _, _ = io.WriteString(w, "<label class=\"label\"><span class=\"label-text-alt text-error\">" + err + "</span></label>")
+        }
+        _, _ = io.WriteString(w, "</div>")
+        
+        // Email field
+        _, _ = io.WriteString(w, "<div class=\"form-control\">")
+        _, _ = io.WriteString(w, "<label class=\"label\"><span class=\"label-text\">Email</span></label>")
+        _, _ = io.WriteString(w, "<input type=\"email\" name=\"email\" value=\"" + data.Email + "\" class=\"input input-bordered\" required>")
+        if err, exists := errors["email"]; exists {
+            _, _ = io.WriteString(w, "<label class=\"label\"><span class=\"label-text-alt text-error\">" + err + "</span></label>")
+        }
+        _, _ = io.WriteString(w, "</div>")
+        
+        // Message field
+        _, _ = io.WriteString(w, "<div class=\"form-control\">")
+        _, _ = io.WriteString(w, "<label class=\"label\"><span class=\"label-text\">Message</span></label>")
+        _, _ = io.WriteString(w, "<textarea name=\"message\" class=\"textarea textarea-bordered\" rows=\"4\">" + data.Message + "</textarea>")
+        if err, exists := errors["message"]; exists {
+            _, _ = io.WriteString(w, "<label class=\"label\"><span class=\"label-text-alt text-error\">" + err + "</span></label>")
+        }
+        _, _ = io.WriteString(w, "</div>")
+        
+        // Submit button
+        _, _ = io.WriteString(w, "<div class=\"form-control\">")
+        _, _ = io.WriteString(w, "<button type=\"submit\" class=\"btn btn-primary\">Submit</button>")
+        _, _ = io.WriteString(w, "</div>")
+        
+        _, _ = io.WriteString(w, "</form>")
+        return nil
+    })
+}
+`, pas)
+    
+    if err := execx.WriteFileIfMissing(formPath, []byte(formSrc), 0o644); err != nil { 
+        return err 
+    }
+    
+    fmt.Printf("Added form: %s\n", pas)
+    fmt.Printf("  - %s\n", formPath)
+    return nil
+}
+
+func scaffoldWebAwesomeForm(name string) error {
+    keb := kebabCase(name)
+    pas := pascalCase(name)
+    
+    formPath := filepath.Join("app", "templates", fmt.Sprintf("webawesome_form_%s.go", keb))
+    formSrc := fmt.Sprintf(`package templates
+
+import (
+    "context"
+    "io"
+    templ "github.com/a-h/templ"
+    "gothicforge3/internal/webawesome"
+)
+
+// %[1]sFormData represents the form data structure
+type %[1]sFormData struct {
+    Name        string
+    Email       string
+    Message     string
+    // Add more fields as needed
+}
+
+// WebAwesome%[1]sForm creates a Web Awesome form component
+func WebAwesome%[1]sForm(action string, data *%[1]sFormData, errors map[string]string) templ.Component {
+    if data == nil {
+        data = &%[1]sFormData{}
+    }
+    if errors == nil {
+        errors = make(map[string]string)
+    }
+    
+    return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+        _, _ = io.WriteString(w, "<form method=\"post\" action=\"" + action + "\" class=\"space-y-6\">")
+        
+        // Name field
+        nameInput := webawesome.NewInputComponent()
+        nameInput.SetAttribute("name", "name")
+        nameInput.SetAttribute("label", "Name")
+        nameInput.SetAttribute("value", data.Name)
+        nameInput.SetAttribute("required", "true")
+        if err, exists := errors["name"]; exists {
+            nameInput.SetAttribute("help-text", err)
+            nameInput.SetClass("sl-input--invalid")
+        }
+        nameHTML, _ := nameInput.RenderHTML()
+        _, _ = io.WriteString(w, nameHTML)
+        
+        // Email field
+        emailInput := webawesome.NewInputComponent()
+        emailInput.SetAttribute("name", "email")
+        emailInput.SetAttribute("type", "email")
+        emailInput.SetAttribute("label", "Email")
+        emailInput.SetAttribute("value", data.Email)
+        emailInput.SetAttribute("required", "true")
+        if err, exists := errors["email"]; exists {
+            emailInput.SetAttribute("help-text", err)
+            emailInput.SetClass("sl-input--invalid")
+        }
+        emailHTML, _ := emailInput.RenderHTML()
+        _, _ = io.WriteString(w, emailHTML)
+        
+        // Message field
+        messageTextarea := webawesome.NewTextareaComponent()
+        messageTextarea.SetAttribute("name", "message")
+        messageTextarea.SetAttribute("label", "Message")
+        messageTextarea.SetAttribute("rows", "4")
+        messageTextarea.SetContent(data.Message)
+        if err, exists := errors["message"]; exists {
+            messageTextarea.SetAttribute("help-text", err)
+            messageTextarea.SetClass("sl-textarea--invalid")
+        }
+        messageHTML, _ := messageTextarea.RenderHTML()
+        _, _ = io.WriteString(w, messageHTML)
+        
+        // Submit button
+        submitBtn := webawesome.NewButtonComponent()
+        submitBtn.SetAttribute("type", "submit")
+        submitBtn.SetAttribute("variant", "primary")
+        submitBtn.SetContent("Submit")
+        submitHTML, _ := submitBtn.RenderHTML()
+        _, _ = io.WriteString(w, submitHTML)
+        
+        _, _ = io.WriteString(w, "</form>")
+        return nil
+    })
+}
+
+// %[1]sFormExample shows usage examples for the %[1]s form
+func %[1]sFormExample() templ.Component {
+    return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+        _, _ = io.WriteString(w, "<div class=\"space-y-6\">")
+        _, _ = io.WriteString(w, "<h3 class=\"text-lg font-semibold\">%[1]s Form Examples</h3>")
+        
+        // Default form
+        _, _ = io.WriteString(w, "<div class=\"example\">")
+        _, _ = io.WriteString(w, "<h4 class=\"font-medium\">Default Form</h4>")
+        _ = WebAwesome%[1]sForm("/submit", nil, nil).Render(ctx, w)
+        _, _ = io.WriteString(w, "</div>")
+        
+        // Form with data
+        _, _ = io.WriteString(w, "<div class=\"example\">")
+        _, _ = io.WriteString(w, "<h4 class=\"font-medium\">Form with Data</h4>")
+        sampleData := &%[1]sFormData{
+            Name:    "John Doe",
+            Email:   "john@example.com",
+            Message: "Hello, this is a sample message.",
+        }
+        _ = WebAwesome%[1]sForm("/submit", sampleData, nil).Render(ctx, w)
+        _, _ = io.WriteString(w, "</div>")
+        
+        // Form with errors
+        _, _ = io.WriteString(w, "<div class=\"example\">")
+        _, _ = io.WriteString(w, "<h4 class=\"font-medium\">Form with Validation Errors</h4>")
+        errors := map[string]string{
+            "name":  "Name is required",
+            "email": "Please enter a valid email address",
+        }
+        _ = WebAwesome%[1]sForm("/submit", nil, errors).Render(ctx, w)
+        _, _ = io.WriteString(w, "</div>")
+        
+        _, _ = io.WriteString(w, "</div>")
+        return nil
+    })
+}
+`, pas)
+    
+    if err := execx.WriteFileIfMissing(formPath, []byte(formSrc), 0o644); err != nil { 
+        return err 
+    }
+    
+    fmt.Printf("Added Web Awesome form: %s\n", pas)
+    fmt.Printf("  - %s\n", formPath)
+    fmt.Println()
+    fmt.Println("Usage in templates:")
+    fmt.Printf("  data := &%sFormData{Name: \"John\", Email: \"john@example.com\"}\n", pas)
+    fmt.Printf("  _ = WebAwesome%sForm(\"/submit\", data, nil).Render(ctx, w)\n", pas)
+    return nil
+}
+
+func init() { 
+    addCmd.Flags().StringVar(&systemFlag, "system", "", "Component system to use (webawesome)")
+    rootCmd.AddCommand(addCmd) 
+}
 
 func isValidName(s string) bool {
     re := regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
@@ -612,9 +956,19 @@ func kebabCase(s string) string {
     return s
 }
 
-func scaffoldPage(name string) error {
+func scaffoldPage(name string, system string) error {
     keb := kebabCase(name)
     pas := pascalCase(name)
+    
+    var cardClass, containerClass string
+    if system == "webawesome" {
+        cardClass = "sl-card"
+        containerClass = "container mx-auto p-4"
+    } else {
+        cardClass = "card bg-base-200/60 border border-white/10 rounded-box shadow-xl ring-1 ring-white/10"
+        containerClass = "mx-auto max-w-6xl p-4"
+    }
+    
     // 1) Template component (pure Go, no templ codegen required)
     tmplPath := filepath.Join("app", "templates", fmt.Sprintf("page_%s.go", keb))
     tmplSrc := fmt.Sprintf(`package templates
@@ -627,17 +981,23 @@ import (
 
 func Page%[1]s() templ.Component {
     body := templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
-        _, _ = io.WriteString(w, "<section class=\"mx-auto max-w-6xl p-4\">")
-        _, _ = io.WriteString(w, "<div class=\"card bg-base-200/60 border border-white/10 rounded-box shadow-xl ring-1 ring-white/10\">")
-        _, _ = io.WriteString(w, "<div class=\"card-body\">")
-        _, _ = io.WriteString(w, "<h2 class=\"card-title\">%[1]s</h2>")
-        _, _ = io.WriteString(w, "<p class=\"opacity-80\">Scaffolded page. Edit at app/templates/page_%[2]s.go</p>")
-        _, _ = io.WriteString(w, "</div></div></section>")
+        _, _ = io.WriteString(w, "<section class=\"%[4]s\">")
+        _, _ = io.WriteString(w, "<div class=\"%[5]s\">")
+        if "%[6]s" == "webawesome" {
+            _, _ = io.WriteString(w, "<h2 class=\"text-2xl font-bold mb-4\">%[1]s</h2>")
+            _, _ = io.WriteString(w, "<p class=\"text-gray-600\">Scaffolded Web Awesome page. Edit at app/templates/page_%[2]s.go</p>")
+        } else {
+            _, _ = io.WriteString(w, "<div class=\"card-body\">")
+            _, _ = io.WriteString(w, "<h2 class=\"card-title\">%[1]s</h2>")
+            _, _ = io.WriteString(w, "<p class=\"opacity-80\">Scaffolded page. Edit at app/templates/page_%[2]s.go</p>")
+            _, _ = io.WriteString(w, "</div>")
+        }
+        _, _ = io.WriteString(w, "</div></section>")
         return nil
     })
     return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error { return LayoutSEO(SEO{Title: "%[1]s", Description: "%[1]s page", Canonical: "/%[2]s"}).Render(templ.WithChildren(ctx, body), w) })
 }
-`, pas, keb)
+`, pas, keb, pas, containerClass, cardClass, system)
     if err := execx.WriteFileIfMissing(tmplPath, []byte(tmplSrc), 0o644); err != nil { return err }
 
     // 2) Route registrar that mounts GET /<keb>
@@ -668,9 +1028,15 @@ func init() {
     return nil
 }
 
-func scaffoldComponent(name string) error {
+func scaffoldComponent(name string, system string) error {
     keb := kebabCase(name)
     pas := pascalCase(name)
+    
+    if system == "webawesome" {
+        return scaffoldWebAwesomeComponent(name)
+    }
+    
+    // Default component scaffolding
     compPath := filepath.Join("app", "templates", fmt.Sprintf("component_%s.go", keb))
     compSrc := fmt.Sprintf(`package templates
 
@@ -694,7 +1060,7 @@ func Component%[1]s() templ.Component {
 
 // scaffoldModule bundles a page and db schema under the same name.
 func scaffoldModule(name string) error {
-    if err := scaffoldPage(name); err != nil { return err }
+    if err := scaffoldPage(name, ""); err != nil { return err }
     if err := scaffoldDB(name); err != nil { return err }
     fmt.Printf("Added module: %s (page + db)\n", name)
     return nil

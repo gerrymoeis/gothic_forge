@@ -1,0 +1,457 @@
+package webawesome
+
+// Button creates a Web Awesome button component
+templ Button(props ButtonComponent) {
+	@templ.Raw(renderComponent(&props))
+}
+
+// Input creates a Web Awesome input component
+templ Input(props InputComponent) {
+	@templ.Raw(renderComponent(&props))
+}
+
+// Select creates a Web Awesome select component
+templ Select(props SelectComponent) {
+	@templ.Raw(renderComponent(&props))
+}
+
+// Textarea creates a Web Awesome textarea component
+templ Textarea(props TextareaComponent) {
+	@templ.Raw(renderComponent(&props))
+}
+
+// Checkbox creates a Web Awesome checkbox component
+templ Checkbox(props CheckboxComponent) {
+	@templ.Raw(renderComponent(&props))
+}
+
+// Radio creates a Web Awesome radio component
+templ Radio(props RadioComponent) {
+	@templ.Raw(renderComponent(&props))
+}
+
+// ButtonPrimary creates a primary button with common defaults
+templ ButtonPrimary(text string, attrs ...map[string]string) {
+	@Button(ButtonComponent{
+		BaseComponent: mergeBaseAttrs(attrs...),
+		Variant: "primary",
+		Type: "button",
+		Children: []templ.Component{templ.Raw(text)},
+	})
+}
+
+// ButtonSecondary creates a secondary button with common defaults
+templ ButtonSecondary(text string, attrs ...map[string]string) {
+	@Button(ButtonComponent{
+		BaseComponent: mergeBaseAttrs(attrs...),
+		Variant: "neutral",
+		Type: "button",
+		Children: []templ.Component{templ.Raw(text)},
+	})
+}
+
+// ButtonSuccess creates a success button with common defaults
+templ ButtonSuccess(text string, attrs ...map[string]string) {
+	@Button(ButtonComponent{
+		BaseComponent: mergeBaseAttrs(attrs...),
+		Variant: "success",
+		Type: "button",
+		Children: []templ.Component{templ.Raw(text)},
+	})
+}
+
+// ButtonDanger creates a danger button with common defaults
+templ ButtonDanger(text string, attrs ...map[string]string) {
+	@Button(ButtonComponent{
+		BaseComponent: mergeBaseAttrs(attrs...),
+		Variant: "danger",
+		Type: "button",
+		Children: []templ.Component{templ.Raw(text)},
+	})
+}
+
+// TextInput creates a text input with common defaults
+templ TextInput(name, placeholder string, attrs ...map[string]string) {
+	@Input(InputComponent{
+		BaseComponent: mergeBaseAttrs(attrs...),
+		Type: "text",
+		Name: name,
+		Placeholder: placeholder,
+	})
+}
+
+// EmailInput creates an email input with common defaults
+templ EmailInput(name, placeholder string, attrs ...map[string]string) {
+	@Input(InputComponent{
+		BaseComponent: mergeBaseAttrs(attrs...),
+		Type: "email",
+		Name: name,
+		Placeholder: placeholder,
+	})
+}
+
+// PasswordInput creates a password input with common defaults
+templ PasswordInput(name, placeholder string, attrs ...map[string]string) {
+	@Input(InputComponent{
+		BaseComponent: mergeBaseAttrs(attrs...),
+		Type: "password",
+		Name: name,
+		Placeholder: placeholder,
+	})
+}
+
+// SearchInput creates a search input with common defaults
+templ SearchInput(name, placeholder string, attrs ...map[string]string) {
+	@Input(InputComponent{
+		BaseComponent: mergeBaseAttrs(attrs...),
+		Type: "search",
+		Name: name,
+		Placeholder: placeholder,
+	})
+}
+
+// SimpleSelect creates a select with string options
+templ SimpleSelect(name string, options []string, attrs ...map[string]string) {
+	@Select(SelectComponent{
+		BaseComponent: mergeBaseAttrs(attrs...),
+		Name: name,
+		Options: stringOptionsToSelectOptions(options),
+	})
+}
+
+// FormTextarea creates a textarea with common defaults
+templ FormTextarea(name, placeholder string, rows int, attrs ...map[string]string) {
+	@Textarea(TextareaComponent{
+		BaseComponent: mergeBaseAttrs(attrs...),
+		Name: name,
+		Placeholder: placeholder,
+		Rows: rows,
+	})
+}
+
+// FormCheckbox creates a checkbox with label
+templ FormCheckbox(name, value, label string, checked bool, attrs ...map[string]string) {
+	@Checkbox(CheckboxComponent{
+		BaseComponent: mergeBaseAttrs(attrs...),
+		Name: name,
+		Value: value,
+		Label: label,
+		Checked: checked,
+	})
+}
+
+// FormRadio creates a radio button with label
+templ FormRadio(name, value, label string, checked bool, attrs ...map[string]string) {
+	@Radio(RadioComponent{
+		BaseComponent: mergeBaseAttrs(attrs...),
+		Name: name,
+		Value: value,
+		Label: label,
+		Checked: checked,
+	})
+}
+
+// RadioGroup creates a group of radio buttons
+templ RadioGroup(name string, options []RadioOption, selectedValue string, attrs ...map[string]string) {
+	<div class="radio-group">
+		for _, option := range options {
+			@FormRadio(name, option.Value, option.Label, option.Value == selectedValue, attrs...)
+		}
+	</div>
+}
+
+// CheckboxGroup creates a group of checkboxes
+templ CheckboxGroup(name string, options []CheckboxOption, attrs ...map[string]string) {
+	<div class="checkbox-group">
+		for _, option := range options {
+			@FormCheckbox(name+"[]", option.Value, option.Label, option.Checked, attrs...)
+		}
+	</div>
+}
+
+// Form creates a form wrapper with Web Awesome styling
+templ Form(action, method string, attrs ...map[string]string) {
+	<form action={ action } method={ method }>
+		{ children... }
+	</form>
+}
+
+// FormField creates a form field with label and input
+templ FormField(label, name, inputType, placeholder string, required bool, attrs ...map[string]string) {
+	<div class="form-field">
+		<label for={ name } class="form-label">
+			{ label }
+			if required {
+				<span class="text-danger">*</span>
+			}
+		</label>
+		@Input(InputComponent{
+			BaseComponent: BaseComponent{
+				ID: name,
+				Class: "form-input",
+			},
+			Type: inputType,
+			Name: name,
+			Placeholder: placeholder,
+			Required: required,
+		})
+	</div>
+}
+
+// FormFieldWithError creates a form field with error display
+templ FormFieldWithError(label, name, inputType, placeholder, errorMsg string, required bool, attrs ...map[string]string) {
+	<div class="form-field">
+		<label for={ name } class="form-label">
+			{ label }
+			if required {
+				<span class="text-danger">*</span>
+			}
+		</label>
+		@Input(createInputWithError(name, inputType, placeholder, errorMsg, required))
+		if errorMsg != "" {
+			<div class="form-error">{ errorMsg }</div>
+		}
+	</div>
+}
+
+// SubmitButton creates a submit button with common styling
+templ SubmitButton(text string, loading bool, attrs ...map[string]string) {
+	@Button(ButtonComponent{
+		BaseComponent: mergeBaseAttrs(attrs...),
+		Variant: "primary",
+		Type: "submit",
+		Loading: loading,
+		Children: []templ.Component{templ.Raw(text)},
+	})
+}
+
+// CancelButton creates a cancel button with common styling
+templ CancelButton(text string, attrs ...map[string]string) {
+	@Button(ButtonComponent{
+		BaseComponent: mergeBaseAttrs(attrs...),
+		Variant: "neutral",
+		Type: "button",
+		Children: []templ.Component{templ.Raw(text)},
+	})
+}
+// Layout Components
+
+// Card creates a Web Awesome card component
+templ Card(props CardComponent) {
+	@templ.Raw(renderComponent(&props))
+}
+
+// Dialog creates a Web Awesome dialog component
+templ Dialog(props DialogComponent) {
+	@templ.Raw(renderComponent(&props))
+}
+
+// Drawer creates a Web Awesome drawer component
+templ Drawer(props DrawerComponent) {
+	@templ.Raw(renderComponent(&props))
+}
+
+// TabGroup creates a Web Awesome tab group component
+templ TabGroup(props TabGroupComponent) {
+	@templ.Raw(renderComponent(&props))
+}
+
+// Table creates a Web Awesome table component
+templ Table(props TableComponent) {
+	@templ.Raw(renderComponent(&props))
+}
+
+// Badge creates a Web Awesome badge component
+templ Badge(props BadgeComponent) {
+	@templ.Raw(renderComponent(&props))
+}
+
+// ProgressBar creates a Web Awesome progress bar component
+templ ProgressBar(props ProgressBarComponent) {
+	@templ.Raw(renderComponent(&props))
+}
+
+// Spinner creates a Web Awesome spinner component
+templ Spinner(props SpinnerComponent) {
+	@templ.Raw(renderComponent(&props))
+}
+
+// Interactive Components
+
+// Dropdown creates a Web Awesome dropdown component
+templ Dropdown(props DropdownComponent) {
+	@templ.Raw(renderComponent(&props))
+}
+
+// Menu creates a Web Awesome menu component
+templ Menu(props MenuComponent) {
+	@templ.Raw(renderComponent(&props))
+}
+
+// Tooltip creates a Web Awesome tooltip component
+templ Tooltip(props TooltipComponent) {
+	@templ.Raw(renderComponent(&props))
+}
+
+// Convenience Layout Templates
+
+// SimpleCard creates a card with header, content, and optional footer
+templ SimpleCard(header, content, footer string, attrs ...map[string]string) {
+	@Card(CardComponent{
+		BaseComponent: mergeBaseAttrs(attrs...),
+		Header: header,
+		Footer: footer,
+		Children: []templ.Component{templ.Raw(content)},
+	})
+}
+
+// ModalDialog creates a modal dialog with label and content
+templ ModalDialog(label, content string, open bool, attrs ...map[string]string) {
+	@Dialog(DialogComponent{
+		BaseComponent: mergeBaseAttrs(attrs...),
+		Label: label,
+		Open: open,
+		Children: []templ.Component{templ.Raw(content)},
+	})
+}
+
+// SideDrawer creates a side drawer with content
+templ SideDrawer(label, content string, placement string, open bool, attrs ...map[string]string) {
+	@Drawer(DrawerComponent{
+		BaseComponent: mergeBaseAttrs(attrs...),
+		Label: label,
+		Placement: placement,
+		Open: open,
+		Children: []templ.Component{templ.Raw(content)},
+	})
+}
+
+// SimpleTabs creates a tab group from a map of tab labels to content
+templ SimpleTabs(tabs map[string]string, activeTab string, attrs ...map[string]string) {
+	@TabGroup(TabGroupComponent{
+		BaseComponent: mergeBaseAttrs(attrs...),
+		Tabs: createTabsFromMap(tabs, activeTab),
+	})
+}
+
+// DataTable creates a table with headers and data rows
+templ DataTable(headers []string, rows [][]string, caption string, attrs ...map[string]string) {
+	@Table(TableComponent{
+		BaseComponent: mergeBaseAttrs(attrs...),
+		Headers: headers,
+		Rows: rows,
+		Caption: caption,
+	})
+}
+
+// StatusBadge creates a badge with status styling
+templ StatusBadge(text, status string, pill bool, attrs ...map[string]string) {
+	@Badge(BadgeComponent{
+		BaseComponent: mergeBaseAttrs(attrs...),
+		Content: text,
+		Variant: status,
+		Pill: pill,
+	})
+}
+
+// LoadingSpinner creates a loading spinner with optional size
+templ LoadingSpinner(size string, attrs ...map[string]string) {
+	@Spinner(SpinnerComponent{
+		BaseComponent: mergeBaseAttrs(attrs...),
+		Size: size,
+	})
+}
+
+// ProgressIndicator creates a progress bar with value and label
+templ ProgressIndicator(value int, label string, attrs ...map[string]string) {
+	@ProgressBar(ProgressBarComponent{
+		BaseComponent: mergeBaseAttrs(attrs...),
+		Value: value,
+		Label: label,
+	})
+}
+
+// IndeterminateProgress creates an indeterminate progress bar
+templ IndeterminateProgress(label string, attrs ...map[string]string) {
+	@ProgressBar(ProgressBarComponent{
+		BaseComponent: mergeBaseAttrs(attrs...),
+		Indeterminate: true,
+		Label: label,
+	})
+}
+
+// ActionDropdown creates a dropdown with action menu
+templ ActionDropdown(buttonText string, actions []MenuItem, attrs ...map[string]string) {
+	@Dropdown(CreateSimpleDropdown(buttonText, actions, attrs...))
+}
+
+// ContextMenu creates a context menu
+templ ContextMenu(items []MenuItem, attrs ...map[string]string) {
+	@Menu(CreateContextMenu(items, attrs...))
+}
+
+// HelpTooltip creates a help tooltip with question mark icon
+templ HelpTooltip(helpText string, attrs ...map[string]string) {
+	@Tooltip(CreateHelpTooltip(helpText, attrs...))
+}
+
+// ButtonWithTooltip creates a button with tooltip
+templ ButtonWithTooltip(buttonText, tooltipText, variant string, attrs ...map[string]string) {
+	@Tooltip(CreateTooltipButton(buttonText, tooltipText, variant, attrs...))
+}
+
+// Layout Patterns
+
+// TwoColumnLayout creates a two-column layout using cards
+templ TwoColumnLayout(leftContent, rightContent string, attrs ...map[string]string) {
+	<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+		<div class="col-span-1">
+			@SimpleCard("", leftContent, "", map[string]string{"class": "h-full"})
+		</div>
+		<div class="col-span-1">
+			@SimpleCard("", rightContent, "", map[string]string{"class": "h-full"})
+		</div>
+	</div>
+}
+
+// ThreeColumnLayout creates a three-column layout using cards
+templ ThreeColumnLayout(leftContent, centerContent, rightContent string, attrs ...map[string]string) {
+	<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+		<div class="col-span-1">
+			@SimpleCard("", leftContent, "", map[string]string{"class": "h-full"})
+		</div>
+		<div class="col-span-1">
+			@SimpleCard("", centerContent, "", map[string]string{"class": "h-full"})
+		</div>
+		<div class="col-span-1">
+			@SimpleCard("", rightContent, "", map[string]string{"class": "h-full"})
+		</div>
+	</div>
+}
+
+// DashboardLayout creates a dashboard-style layout with header and content areas
+templ DashboardLayout(headerContent, mainContent, sidebarContent string, attrs ...map[string]string) {
+	<div class="min-h-screen bg-gray-50">
+		<!-- Header -->
+		<header class="bg-white shadow-sm border-b">
+			<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+				@templ.Raw(headerContent)
+			</div>
+		</header>
+		
+		<!-- Main Content -->
+		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+			<div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+				<!-- Sidebar -->
+				<div class="lg:col-span-1">
+					@SimpleCard("", sidebarContent, "", map[string]string{"class": "sticky top-8"})
+				</div>
+				
+				<!-- Main Content -->
+				<div class="lg:col-span-3">
+					@SimpleCard("", mainContent, "")
+				</div>
+			</div>
+		</div>
+	</div>
+}

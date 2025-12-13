@@ -1,0 +1,47 @@
+{
+  "name": "custom-theme",
+  "displayName": "Custom-Theme",
+  "description": "Custom theme based on Default Theme",
+  "version": "1.0.0",
+  "colors": {
+    "primary": "hsl(198.6 88.7% 48.4%)",
+    "secondary": "hsl(240 4.9% 83.9%)",
+    "success": "hsl(142.1 76.2% 36.3%)",
+    "warning": "hsl(47.9 95.8% 53.1%)",
+    "danger": "hsl(0 84.2% 60.2%)",
+    "neutral": "hsl(240 5.9% 10%)",
+    "background": "hsl(0 0% 100%)",
+    "surface": "hsl(0 0% 100%)",
+    "onPrimary": "hsl(0 0% 100%)",
+    "onSecondary": "hsl(240 5.9% 10%)",
+    "onSurface": "hsl(240 5.9% 10%)"
+  },
+  "typography": {
+    "fontFamily": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'",
+    "fontSize": "1rem",
+    "lineHeight": "1.6",
+    "fontWeight": "400"
+  },
+  "spacing": {
+    "xSmall": "0.125rem",
+    "small": "0.25rem",
+    "medium": "0.5rem",
+    "large": "1rem",
+    "xLarge": "1.5rem"
+  },
+  "borderRadius": {
+    "small": "0.1875rem",
+    "medium": "0.25rem",
+    "large": "0.5rem",
+    "xLarge": "1rem",
+    "pill": "9999px"
+  },
+  "shadows": {
+    "xSmall": "0 1px 2px hsl(240 3.8% 46.1% / 6%)",
+    "small": "0 1px 2px hsl(240 3.8% 46.1% / 12%)",
+    "medium": "0 2px 4px hsl(240 3.8% 46.1% / 12%)",
+    "large": "0 2px 8px hsl(240 3.8% 46.1% / 12%)",
+    "xLarge": "0 4px 16px hsl(240 3.8% 46.1% / 12%)"
+  },
+  "custom": {}
+}

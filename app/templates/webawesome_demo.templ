@@ -1,0 +1,279 @@
+package templates
+
+// WebAwesomeDemo demonstrates Web Awesome components in action
+templ WebAwesomeDemo() {
+  @WebAwesomeLayout("Web Awesome Demo - Gothic Forge v10") {
+    <div class="space-y-8">
+      <!-- Header -->
+      <div class="text-center">
+        <h1 class="text-4xl font-bold mb-4" style="color: var(--sl-color-primary-600);">
+          Web Awesome Components Demo
+        </h1>
+        <p class="text-lg" style="color: var(--sl-color-neutral-600);">
+          Explore the power of Web Awesome components integrated with Gothic Forge
+        </p>
+      </div>
+      
+      <!-- Buttons Section -->
+      <sl-card>
+        <div slot="header">
+          <h2 class="text-2xl font-semibold">Buttons</h2>
+        </div>
+        
+        <div class="space-y-4">
+          <div class="flex flex-wrap gap-2">
+            <sl-button variant="default">Default</sl-button>
+            <sl-button variant="primary">Primary</sl-button>
+            <sl-button variant="success">Success</sl-button>
+            <sl-button variant="neutral">Neutral</sl-button>
+            <sl-button variant="warning">Warning</sl-button>
+            <sl-button variant="danger">Danger</sl-button>
+          </div>
+          
+          <div class="flex flex-wrap gap-2">
+            <sl-button size="small">Small</sl-button>
+            <sl-button size="medium">Medium</sl-button>
+            <sl-button size="large">Large</sl-button>
+          </div>
+          
+          <div class="flex flex-wrap gap-2">
+            <sl-button loading>Loading</sl-button>
+            <sl-button disabled>Disabled</sl-button>
+            <sl-button>
+              <sl-icon slot="prefix" name="heart"></sl-icon>
+              With Icon
+            </sl-button>
+          </div>
+        </div>
+      </sl-card>
+      
+      <!-- Form Components Section -->
+      <sl-card>
+        <div slot="header">
+          <h2 class="text-2xl font-semibold">Form Components</h2>
+        </div>
+        
+        <form class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <sl-input label="Name" placeholder="Enter your name" required></sl-input>
+            <sl-input label="Email" type="email" placeholder="Enter your email" required></sl-input>
+          </div>
+          
+          <sl-select label="Country" placeholder="Select your country">
+            <sl-option value="us">United States</sl-option>
+            <sl-option value="ca">Canada</sl-option>
+            <sl-option value="uk">United Kingdom</sl-option>
+            <sl-option value="de">Germany</sl-option>
+          </sl-select>
+          
+          <sl-textarea label="Message" placeholder="Enter your message" rows="4"></sl-textarea>
+          
+          <div class="space-y-2">
+            <sl-checkbox>I agree to the terms and conditions</sl-checkbox>
+            <sl-checkbox checked>Subscribe to newsletter</sl-checkbox>
+          </div>
+          
+          <div class="space-y-2">
+            <label class="block text-sm font-medium">Preferred Contact Method:</label>
+            <sl-radio-group name="contact" value="email">
+              <sl-radio value="email">Email</sl-radio>
+              <sl-radio value="phone">Phone</sl-radio>
+              <sl-radio value="sms">SMS</sl-radio>
+            </sl-radio-group>
+          </div>
+          
+          <div class="flex gap-2">
+            <sl-button type="submit" variant="primary">Submit</sl-button>
+            <sl-button type="reset" variant="neutral">Reset</sl-button>
+          </div>
+        </form>
+      </sl-card>
+      
+      <!-- Interactive Components Section -->
+      <sl-card>
+        <div slot="header">
+          <h2 class="text-2xl font-semibold">Interactive Components</h2>
+        </div>
+        
+        <div class="space-y-6">
+          <!-- Dropdown -->
+          <div>
+            <h3 class="text-lg font-medium mb-2">Dropdown</h3>
+            <sl-dropdown>
+              <sl-button slot="trigger" caret>Dropdown</sl-button>
+              <sl-menu>
+                <sl-menu-item>Option 1</sl-menu-item>
+                <sl-menu-item>Option 2</sl-menu-item>
+                <sl-menu-item>Option 3</sl-menu-item>
+                <sl-divider></sl-divider>
+                <sl-menu-item type="checkbox" checked>Checkbox</sl-menu-item>
+                <sl-menu-item disabled>Disabled</sl-menu-item>
+              </sl-menu>
+            </sl-dropdown>
+          </div>
+          
+          <!-- Tooltips -->
+          <div>
+            <h3 class="text-lg font-medium mb-2">Tooltips</h3>
+            <div class="flex gap-4">
+              <sl-tooltip content="This is a tooltip">
+                <sl-button>Hover me</sl-button>
+              </sl-tooltip>
+              <sl-tooltip content="This tooltip appears on the right" placement="right">
+                <sl-button>Right tooltip</sl-button>
+              </sl-tooltip>
+            </div>
+          </div>
+          
+          <!-- Dialog -->
+          <div>
+            <h3 class="text-lg font-medium mb-2">Dialog</h3>
+            <sl-button onclick="document.getElementById('demo-dialog').show()">Open Dialog</sl-button>
+            <sl-dialog id="demo-dialog" label="Demo Dialog">
+              <p>This is a demo dialog with Web Awesome styling.</p>
+              <div slot="footer">
+                <sl-button variant="neutral" onclick="document.getElementById('demo-dialog').hide()">Close</sl-button>
+                <sl-button variant="primary" onclick="document.getElementById('demo-dialog').hide()">Save</sl-button>
+              </div>
+            </sl-dialog>
+          </div>
+        </div>
+      </sl-card>
+      
+      <!-- Data Display Section -->
+      <sl-card>
+        <div slot="header">
+          <h2 class="text-2xl font-semibold">Data Display</h2>
+        </div>
+        
+        <div class="space-y-6">
+          <!-- Badges -->
+          <div>
+            <h3 class="text-lg font-medium mb-2">Badges</h3>
+            <div class="flex flex-wrap gap-2">
+              <sl-badge variant="primary">Primary</sl-badge>
+              <sl-badge variant="success">Success</sl-badge>
+              <sl-badge variant="warning">Warning</sl-badge>
+              <sl-badge variant="danger">Danger</sl-badge>
+              <sl-badge pill>Pill Badge</sl-badge>
+            </div>
+          </div>
+          
+          <!-- Progress -->
+          <div>
+            <h3 class="text-lg font-medium mb-2">Progress</h3>
+            <div class="space-y-2">
+              <sl-progress-bar value="25" label="25%"></sl-progress-bar>
+              <sl-progress-bar value="50" label="50%"></sl-progress-bar>
+              <sl-progress-bar value="75" label="75%"></sl-progress-bar>
+              <sl-progress-bar indeterminate label="Loading..."></sl-progress-bar>
+            </div>
+          </div>
+          
+          <!-- Spinners -->
+          <div>
+            <h3 class="text-lg font-medium mb-2">Spinners</h3>
+            <div class="flex gap-4 items-center">
+              <sl-spinner></sl-spinner>
+              <sl-spinner style="font-size: 2rem;"></sl-spinner>
+              <sl-spinner style="font-size: 3rem; --track-width: 6px;"></sl-spinner>
+            </div>
+          </div>
+        </div>
+      </sl-card>
+      
+      <!-- Tab Group Section -->
+      <sl-card>
+        <div slot="header">
+          <h2 class="text-2xl font-semibold">Tab Group</h2>
+        </div>
+        
+        <sl-tab-group>
+          <sl-tab slot="nav" panel="general">General</sl-tab>
+          <sl-tab slot="nav" panel="custom">Custom</sl-tab>
+          <sl-tab slot="nav" panel="advanced">Advanced</sl-tab>
+          <sl-tab slot="nav" panel="disabled" disabled>Disabled</sl-tab>
+          
+          <sl-tab-panel name="general">
+            <p>This is the general tab panel. You can put any content here including other Web Awesome components.</p>
+            <sl-button variant="primary" class="mt-4">General Action</sl-button>
+          </sl-tab-panel>
+          
+          <sl-tab-panel name="custom">
+            <p>This is the custom tab panel with some form elements.</p>
+            <div class="mt-4 space-y-2">
+              <sl-input label="Custom Setting" placeholder="Enter value"></sl-input>
+              <sl-checkbox>Enable custom feature</sl-checkbox>
+            </div>
+          </sl-tab-panel>
+          
+          <sl-tab-panel name="advanced">
+            <p>This is the advanced tab panel.</p>
+            <sl-alert variant="warning" open class="mt-4">
+              <sl-icon slot="icon" name="exclamation-triangle"></sl-icon>
+              Advanced settings can affect system performance.
+            </sl-alert>
+          </sl-tab-panel>
+        </sl-tab-group>
+      </sl-card>
+      
+      <!-- HTMX Integration Demo -->
+      <sl-card>
+        <div slot="header">
+          <h2 class="text-2xl font-semibold">HTMX Integration</h2>
+        </div>
+        
+        <div class="space-y-4">
+          <p>Web Awesome components work seamlessly with HTMX:</p>
+          
+          <div id="htmx-demo-target" class="p-4 border rounded" style="border-color: var(--sl-color-neutral-300);">
+            <p>Click the button below to load content via HTMX</p>
+          </div>
+          
+          <sl-button 
+            hx-get="/api/demo-content" 
+            hx-target="#htmx-demo-target"
+            hx-swap="innerHTML"
+            variant="primary">
+            Load Content with HTMX
+          </sl-button>
+          
+          <sl-button 
+            hx-post="/api/demo-action" 
+            hx-target="#htmx-demo-target"
+            hx-swap="innerHTML"
+            variant="success">
+            Post Action with HTMX
+          </sl-button>
+        </div>
+      </sl-card>
+      
+      <!-- Theme Demo -->
+      <sl-card>
+        <div slot="header">
+          <h2 class="text-2xl font-semibold">Theme System</h2>
+        </div>
+        
+        <div class="space-y-4">
+          <p>Web Awesome supports both light and dark themes that integrate with Gothic Forge's theme system:</p>
+          
+          <div class="flex gap-2">
+            <sl-button onclick="setTheme('light')" variant="neutral">
+              <sl-icon slot="prefix" name="sun"></sl-icon>
+              Light Theme
+            </sl-button>
+            <sl-button onclick="setTheme('dark')" variant="neutral">
+              <sl-icon slot="prefix" name="moon"></sl-icon>
+              Dark Theme
+            </sl-button>
+          </div>
+          
+          <sl-alert variant="primary" open>
+            <sl-icon slot="icon" name="info-circle"></sl-icon>
+            Theme changes are automatically saved to localStorage and persist across page reloads.
+          </sl-alert>
+        </div>
+      </sl-card>
+    </div>
+  }
+}

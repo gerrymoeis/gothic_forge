@@ -10,25 +10,100 @@ templ Layout(title string) {
       <meta name="viewport" content="width=device-width, initial-scale=1"/>
       <title>{ title }</title>
       <link rel="preconnect" href="https://cdn.jsdelivr.net"/>
+      
+      <!-- DaisyUI (existing) -->
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui/dist/full.min.css"/>
+      
+      <!-- Web Awesome CSS -->
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/themes/light.css"/>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/themes/dark.css"/>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/shoelace.css"/>
+      
+      <!-- Custom styles -->
       <link rel="stylesheet" href="/static/styles/output.css?v=dev"/>
       <link rel="stylesheet" href="/static/styles/overrides.css"/>
+      <link rel="stylesheet" href="/static/styles/webawesome-overrides.css"/>
+      
+      <!-- Web Awesome JavaScript -->
+      <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/shoelace-autoloader.js"></script>
+      
+      <!-- Existing JavaScript -->
       <script defer src="/static/app.js"></script>
       <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/csp/dist/cdn.min.js"></script>
       <script src="https://unpkg.com/htmx.org"></script>
+      
+      <!-- Web Awesome Theme Configuration -->
+      <script>
+        // Set Web Awesome base path for icons and assets
+        if (window.SlSetBasePath) {
+          window.SlSetBasePath('https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/');
+        }
+        
+        // Theme switching functionality
+        function setWebAwesomeTheme(theme) {
+          document.documentElement.classList.remove('sl-theme-light', 'sl-theme-dark');
+          document.documentElement.classList.add(`sl-theme-${theme}`);
+          localStorage.setItem('webawesome-theme', theme);
+        }
+        
+        // Initialize Web Awesome theme based on DaisyUI theme
+        document.addEventListener('DOMContentLoaded', function() {
+          const daisyTheme = document.documentElement.getAttribute('data-theme');
+          const isDark = daisyTheme === 'dim' || daisyTheme === 'dark' || daisyTheme === 'night';
+          const webAwesomeTheme = isDark ? 'dark' : 'light';
+          setWebAwesomeTheme(webAwesomeTheme);
+        });
+      </script>
     </head>
     <body class="min-h-screen bg-base-100 text-base-content hero-gradient">
       <div class="navbar bg-base-100/60 backdrop-blur rounded-box mt-4 border border-white/15 shadow-xl ring-1 ring-white/10">
-        <div class="flex-1 px-2 text-lg font-semibold"><a class="btn btn-ghost text-xl" href="/">Gothic Forge v3</a></div>
+        <div class="flex-1 px-2 text-lg font-semibold"><a class="btn btn-ghost text-xl" href="/">Gothic Forge v10</a></div>
+        <div class="flex-none">
+          <!-- Theme switcher with Web Awesome support -->
+          <div class="dropdown dropdown-end">
+            <div tabindex="0" role="button" class="btn btn-ghost">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+              </svg>
+            </div>
+            <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+              <li><a onclick="switchTheme('light')">Light</a></li>
+              <li><a onclick="switchTheme('dark')">Dark</a></li>
+              <li><a onclick="switchTheme('dim')">Dim</a></li>
+            </ul>
+          </div>
+        </div>
       </div>
       <main class="container mx-auto p-4 md:pt-8">
         { children... }
       </main>
       <footer class="footer footer-center bg-base-100/60 backdrop-blur border border-white/10 p-4 mt-8 rounded-box mx-4 md:mx-auto max-w-5xl">
         <aside>
-          <p>© { time.Now().Year() } Gothic Forge v3</p>
+          <p>© { time.Now().Year() } Gothic Forge v10 - Now with Web Awesome!</p>
         </aside>
       </footer>
+      
+      <!-- Theme switching script -->
+      <script>
+        function switchTheme(theme) {
+          // Update DaisyUI theme
+          document.documentElement.setAttribute('data-theme', theme);
+          
+          // Update Web Awesome theme
+          const isDark = theme === 'dim' || theme === 'dark' || theme === 'night';
+          const webAwesomeTheme = isDark ? 'dark' : 'light';
+          setWebAwesomeTheme(webAwesomeTheme);
+          
+          // Save preference
+          localStorage.setItem('theme', theme);
+        }
+        
+        // Load saved theme on page load
+        document.addEventListener('DOMContentLoaded', function() {
+          const savedTheme = localStorage.getItem('theme') || 'dim';
+          switchTheme(savedTheme);
+        });
+      </script>
     </body>
   </html>
 }
@@ -63,26 +138,100 @@ templ LayoutSEO(seo SEO) {
       @templ.Raw("<script type=\"application/ld+json\">" + seo.JSONLD + "</script>")
 
       <link rel="preconnect" href="https://cdn.jsdelivr.net"/>
+      
+      <!-- DaisyUI (existing) -->
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui/dist/full.min.css"/>
+      
+      <!-- Web Awesome CSS -->
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/themes/light.css"/>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/themes/dark.css"/>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/shoelace.css"/>
+      
+      <!-- Custom styles -->
       <link rel="stylesheet" href="/static/styles/output.css?v=dev"/>
       <link rel="stylesheet" href="/static/styles/overrides.css"/>
+      <link rel="stylesheet" href="/static/styles/webawesome-overrides.css"/>
+      
+      <!-- Web Awesome JavaScript -->
+      <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/shoelace-autoloader.js"></script>
+      
+      <!-- Existing JavaScript -->
       <script defer src="/static/app.js"></script>
       <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/csp/dist/cdn.min.js"></script>
       <script src="https://unpkg.com/htmx.org"></script>
+      
+      <!-- Web Awesome Theme Configuration -->
+      <script>
+        // Set Web Awesome base path for icons and assets
+        if (window.SlSetBasePath) {
+          window.SlSetBasePath('https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/');
+        }
+        
+        // Theme switching functionality
+        function setWebAwesomeTheme(theme) {
+          document.documentElement.classList.remove('sl-theme-light', 'sl-theme-dark');
+          document.documentElement.classList.add(`sl-theme-${theme}`);
+          localStorage.setItem('webawesome-theme', theme);
+        }
+        
+        // Initialize Web Awesome theme based on DaisyUI theme
+        document.addEventListener('DOMContentLoaded', function() {
+          const daisyTheme = document.documentElement.getAttribute('data-theme');
+          const isDark = daisyTheme === 'dim' || daisyTheme === 'dark' || daisyTheme === 'night';
+          const webAwesomeTheme = isDark ? 'dark' : 'light';
+          setWebAwesomeTheme(webAwesomeTheme);
+        });
+      </script>
     </head>
     <body class="min-h-screen bg-base-100 text-base-content hero-gradient">
       <div class="navbar bg-base-100/60 backdrop-blur rounded-box mt-4 border border-white/15 shadow-xl ring-1 ring-white/10">
-        <div class="flex-1 px-2 text-lg font-semibold"><a class="btn btn-ghost text-xl" href="/">Gothic Forge v3</a></div>
+        <div class="flex-1 px-2 text-lg font-semibold"><a class="btn btn-ghost text-xl" href="/">Gothic Forge v10</a></div>
+        <div class="flex-none">
+          <!-- Theme switcher with Web Awesome support -->
+          <div class="dropdown dropdown-end">
+            <div tabindex="0" role="button" class="btn btn-ghost">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+              </svg>
+            </div>
+            <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+              <li><a onclick="switchTheme('light')">Light</a></li>
+              <li><a onclick="switchTheme('dark')">Dark</a></li>
+              <li><a onclick="switchTheme('dim')">Dim</a></li>
+            </ul>
+          </div>
+        </div>
       </div>
       <main class="container mx-auto p-4 md:pt-8">
         { children... }
       </main>
       <footer class="footer footer-center bg-base-100/60 backdrop-blur border border-white/10 p-4 mt-8 rounded-box mx-4 md:mx-auto max-w-5xl">
         <aside>
-          <p>© { time.Now().Year() } Gothic Forge v3</p>
+          <p>© { time.Now().Year() } Gothic Forge v10 - Now with Web Awesome!</p>
         </aside>
       </footer>
+      
+      <!-- Theme switching script -->
+      <script>
+        function switchTheme(theme) {
+          // Update DaisyUI theme
+          document.documentElement.setAttribute('data-theme', theme);
+          
+          // Update Web Awesome theme
+          const isDark = theme === 'dim' || theme === 'dark' || theme === 'night';
+          const webAwesomeTheme = isDark ? 'dark' : 'light';
+          setWebAwesomeTheme(webAwesomeTheme);
+          
+          // Save preference
+          localStorage.setItem('theme', theme);
+        }
+        
+        // Load saved theme on page load
+        document.addEventListener('DOMContentLoaded', function() {
+          const savedTheme = localStorage.getItem('theme') || 'dim';
+          switchTheme(savedTheme);
+        });
+      </script>
     </body>
   </html>
 }
- 

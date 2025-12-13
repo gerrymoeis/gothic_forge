@@ -1,0 +1,330 @@
+package templates
+
+// WebAwesome Performance Demo showcases HTMX integration and performance optimizations
+templ WebAwesomePerformanceDemo() {
+  @OptimizedLayout("Web Awesome Performance Demo") {
+    <div class="max-w-4xl mx-auto space-y-8">
+      
+      <!-- Header -->
+      <div class="text-center">
+        <h1 class="text-4xl font-bold mb-4">Web Awesome Performance Demo</h1>
+        <p class="text-lg text-base-content/70">
+          Demonstrating HTMX integration and performance optimizations
+        </p>
+      </div>
+      
+      <!-- Performance Metrics -->
+      <sl-card>
+        <div slot="header">
+          <h2 class="text-xl font-semibold">Performance Metrics</h2>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="text-center">
+            <sl-badge variant="primary" pill>
+              <span id="load-time">--</span>ms
+            </sl-badge>
+            <p class="text-sm mt-2">Load Time</p>
+          </div>
+          
+          <div class="text-center">
+            <sl-badge variant="success" pill>
+              <span id="component-count">--</span>
+            </sl-badge>
+            <p class="text-sm mt-2">Components</p>
+          </div>
+          
+          <div class="text-center">
+            <sl-badge variant="neutral" pill>
+              <span id="theme-time">--</span>ms
+            </sl-badge>
+            <p class="text-sm mt-2">Theme Switch</p>
+          </div>
+        </div>
+      </sl-card>
+      
+      <!-- HTMX Live Search Demo -->
+      <sl-card>
+        <div slot="header">
+          <h2 class="text-xl font-semibold">HTMX Live Search</h2>
+        </div>
+        
+        <div class="space-y-4">
+          <sl-input 
+            label="Search Users" 
+            placeholder="Type to search..." 
+            hx-post="/api/demo/search" 
+            hx-target="#search-results" 
+            hx-trigger="keyup changed delay:300ms"
+            hx-indicator="#search-spinner">
+          </sl-input>
+          
+          <div class="flex items-center space-x-2">
+            <sl-spinner id="search-spinner" class="htmx-indicator" size="small"></sl-spinner>
+            <span class="text-sm text-base-content/70 htmx-indicator">Searching...</span>
+          </div>
+          
+          <div id="search-results" class="min-h-[100px] p-4 bg-base-200 rounded">
+            <p class="text-base-content/50">Search results will appear here...</p>
+          </div>
+        </div>
+      </sl-card>
+      
+      <!-- HTMX Form Demo -->
+      <sl-card>
+        <div slot="header">
+          <h2 class="text-xl font-semibold">HTMX Form Submission</h2>
+        </div>
+        
+        <form hx-post="/api/demo/contact" hx-target="#form-result" hx-swap="innerHTML">
+          <div class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <sl-input 
+                label="Name" 
+                name="name" 
+                required>
+              </sl-input>
+              
+              <sl-input 
+                label="Email" 
+                name="email" 
+                type="email" 
+                required>
+              </sl-input>
+            </div>
+            
+            <sl-select 
+              label="Subject" 
+              name="subject" 
+              required>
+              <sl-option value="general">General Inquiry</sl-option>
+              <sl-option value="support">Support Request</sl-option>
+              <sl-option value="feedback">Feedback</sl-option>
+            </sl-select>
+            
+            <sl-textarea 
+              label="Message" 
+              name="message" 
+              rows="4" 
+              required>
+            </sl-textarea>
+            
+            <sl-button 
+              type="submit" 
+              variant="primary"
+              hx-indicator="#submit-spinner">
+              <sl-spinner id="submit-spinner" class="htmx-indicator" slot="prefix" size="small"></sl-spinner>
+              Send Message
+            </sl-button>
+          </div>
+        </form>
+        
+        <div id="form-result" class="mt-4">
+          <!-- Form submission result will appear here -->
+        </div>
+      </sl-card>
+      
+      <!-- Alpine.js Integration Demo -->
+      <sl-card x-data="{ 
+        count: 0, 
+        showDialog: false,
+        user: { name: '', email: '' }
+      }">
+        <div slot="header">
+          <h2 class="text-xl font-semibold">Alpine.js Integration</h2>
+        </div>
+        
+        <div class="space-y-4">
+          <!-- Counter -->
+          <div class="flex items-center space-x-4">
+            <sl-button @click="count--" variant="neutral" size="small">-</sl-button>
+            <sl-badge variant="primary" x-text="count"></sl-badge>
+            <sl-button @click="count++" variant="neutral" size="small">+</sl-button>
+          </div>
+          
+          <!-- Dialog Control -->
+          <div class="space-x-2">
+            <sl-button @click="$wa.showDialog('alpine-dialog'); showDialog = true" variant="primary">
+              Open Dialog
+            </sl-button>
+            
+            <sl-button @click="$wa.openDrawer('alpine-drawer')" variant="neutral">
+              Open Drawer
+            </sl-button>
+          </div>
+          
+          <!-- Reactive Form -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <sl-input 
+              label="Name" 
+              x-model="user.name"
+              placeholder="Enter your name">
+            </sl-input>
+            
+            <sl-input 
+              label="Email" 
+              x-model="user.email"
+              type="email"
+              placeholder="Enter your email">
+            </sl-input>
+          </div>
+          
+          <!-- Live Preview -->
+          <sl-card x-show="user.name || user.email" x-transition>
+            <div slot="header">Live Preview</div>
+            <p><strong>Name:</strong> <span x-text="user.name || 'Not provided'"></span></p>
+            <p><strong>Email:</strong> <span x-text="user.email || 'Not provided'"></span></p>
+          </sl-card>
+        </div>
+      </sl-card>
+      
+      <!-- Performance Testing -->
+      <sl-card>
+        <div slot="header">
+          <h2 class="text-xl font-semibold">Performance Testing</h2>
+        </div>
+        
+        <div class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <sl-button onclick="testThemeSwitch()" variant="primary">
+              Test Theme Switch
+            </sl-button>
+            
+            <sl-button onclick="testComponentLoad()" variant="success">
+              Test Component Load
+            </sl-button>
+            
+            <sl-button onclick="showPerformanceReport()" variant="neutral">
+              Show Report
+            </sl-button>
+          </div>
+          
+          <div id="performance-output" class="p-4 bg-base-200 rounded min-h-[100px]">
+            <p class="text-base-content/50">Performance test results will appear here...</p>
+          </div>
+        </div>
+      </sl-card>
+    </div>
+    
+    <!-- Alpine.js Dialog -->
+    <sl-dialog 
+      id="alpine-dialog" 
+      label="Alpine.js Controlled Dialog"
+      x-data="{ showDialog: false }"
+      :open="showDialog"
+      @sl-hide="showDialog = false">
+      
+      <p>This dialog is controlled by Alpine.js state and Web Awesome magic helpers.</p>
+      <p>Counter value from parent scope: <span x-text="$parent.count"></span></p>
+      
+      <sl-button 
+        slot="footer" 
+        variant="neutral"
+        @click="$wa.hideDialog('alpine-dialog'); showDialog = false">
+        Close
+      </sl-button>
+    </sl-dialog>
+    
+    <!-- Alpine.js Drawer -->
+    <sl-drawer id="alpine-drawer" label="Alpine.js Drawer" placement="end">
+      <p>This drawer demonstrates Alpine.js integration with Web Awesome components.</p>
+      
+      <div class="mt-4 space-y-2">
+        <sl-button onclick="$wa.closeDrawer('alpine-drawer')" variant="primary" size="small">
+          Close Drawer
+        </sl-button>
+      </div>
+    </sl-drawer>
+    
+    <!-- Performance Testing Scripts -->
+    <script>
+      // Performance testing functions
+      function testThemeSwitch() {
+        const output = document.getElementById('performance-output');
+        const start = performance.now();
+        
+        // Switch theme and measure time
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        
+        switchTheme(newTheme);
+        
+        const duration = performance.now() - start;
+        output.innerHTML = `<p><strong>Theme Switch Test:</strong> ${duration.toFixed(2)}ms</p>`;
+        
+        // Switch back
+        setTimeout(() => switchTheme(currentTheme), 1000);
+      }
+      
+      function testComponentLoad() {
+        const output = document.getElementById('performance-output');
+        const start = performance.now();
+        
+        // Create and append a new component
+        const testCard = document.createElement('sl-card');
+        testCard.innerHTML = '<div slot="header">Test Component</div><p>This is a dynamically loaded component.</p>';
+        
+        document.body.appendChild(testCard);
+        
+        // Measure time until component is ready
+        const checkReady = () => {
+          if (testCard.shadowRoot) {
+            const duration = performance.now() - start;
+            output.innerHTML = `<p><strong>Component Load Test:</strong> ${duration.toFixed(2)}ms</p>`;
+            
+            // Clean up
+            setTimeout(() => document.body.removeChild(testCard), 2000);
+          } else {
+            setTimeout(checkReady, 10);
+          }
+        };
+        
+        checkReady();
+      }
+      
+      function showPerformanceReport() {
+        const output = document.getElementById('performance-output');
+        const metrics = window.webAwesomeMetrics || {};
+        
+        let report = '<div class="space-y-2">';
+        report += '<p><strong>Performance Report:</strong></p>';
+        
+        if (metrics.totalLoad) {
+          report += `<p>• Total Load Time: ${metrics.totalLoad.toFixed(2)}ms</p>`;
+        }
+        
+        if (metrics.componentInit) {
+          report += `<p>• Component Init: ${metrics.componentInit.toFixed(2)}ms</p>`;
+        }
+        
+        if (metrics.themeSwitch) {
+          report += `<p>• Last Theme Switch: ${metrics.themeSwitch.toFixed(2)}ms</p>`;
+        }
+        
+        const componentCount = document.querySelectorAll('[class*="sl-"], sl-button, sl-input, sl-select, sl-textarea, sl-checkbox, sl-radio, sl-card, sl-dialog, sl-drawer').length;
+        report += `<p>• Components on Page: ${componentCount}</p>`;
+        
+        report += '</div>';
+        output.innerHTML = report;
+      }
+      
+      // Update performance metrics display
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(() => {
+          const metrics = window.webAwesomeMetrics || {};
+          
+          if (metrics.totalLoad) {
+            document.getElementById('load-time').textContent = metrics.totalLoad.toFixed(1);
+          }
+          
+          const componentCount = document.querySelectorAll('[class*="sl-"], sl-button, sl-input, sl-select, sl-textarea, sl-checkbox, sl-radio, sl-card, sl-dialog, sl-drawer').length;
+          document.getElementById('component-count').textContent = componentCount;
+          
+          if (metrics.themeSwitch) {
+            document.getElementById('theme-time').textContent = metrics.themeSwitch.toFixed(1);
+          }
+        }, 1000);
+      });
+    </script>
+  }
+}

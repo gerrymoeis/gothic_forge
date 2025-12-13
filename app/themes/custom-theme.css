@@ -1,0 +1,46 @@
+/* Web Awesome Theme: Default Theme */
+/* Generated for Gothic Forge */
+
+:root {
+  /* Primary Colors */
+  --sl-color-primary-500: hsl(198.6 88.7% 48.4%);
+  --sl-color-primary-600: hsl(198.6 88.7% 48.4%);
+
+  /* Semantic Colors */
+  --sl-color-success-500: hsl(142.1 76.2% 36.3%);
+  --sl-color-warning-500: hsl(47.9 95.8% 53.1%);
+  --sl-color-danger-500: hsl(0 84.2% 60.2%);
+  --sl-color-neutral-500: hsl(240 5.9% 10%);
+
+  /* Surface Colors */
+  --sl-color-neutral-0: hsl(0 0% 100%);
+  --sl-color-neutral-50: hsl(0 0% 100%);
+  --sl-color-neutral-1000: hsl(240 5.9% 10%);
+
+  /* Typography */
+  --sl-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+  --sl-font-size-medium: 1rem;
+  --sl-line-height-normal: 1.6;
+  --sl-font-weight-normal: 400;
+
+  /* Spacing */
+  --sl-spacing-x-small: 0.125rem;
+  --sl-spacing-small: 0.25rem;
+  --sl-spacing-medium: 0.5rem;
+  --sl-spacing-large: 1rem;
+  --sl-spacing-x-large: 1.5rem;
+
+  /* Border Radius */
+  --sl-border-radius-small: 0.1875rem;
+  --sl-border-radius-medium: 0.25rem;
+  --sl-border-radius-large: 0.5rem;
+  --sl-border-radius-x-large: 1rem;
+  --sl-border-radius-pill: 9999px;
+
+  /* Shadows */
+  --sl-shadow-x-small: 0 1px 2px hsl(240 3.8% 46.1% / 6%);
+  --sl-shadow-small: 0 1px 2px hsl(240 3.8% 46.1% / 12%);
+  --sl-shadow-medium: 0 2px 4px hsl(240 3.8% 46.1% / 12%);
+  --sl-shadow-large: 0 2px 8px hsl(240 3.8% 46.1% / 12%);
+  --sl-shadow-x-large: 0 4px 16px hsl(240 3.8% 46.1% / 12%);
+}

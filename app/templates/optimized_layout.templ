@@ -1,0 +1,173 @@
+package templates
+
+import "time"
+
+// OptimizedLayout provides a performance-optimized layout for Web Awesome components
+templ OptimizedLayout(title string) {
+  <!doctype html>
+  <html lang="en" data-theme="dim">
+    <head>
+      <meta charset="utf-8"/>
+      <meta name="viewport" content="width=device-width, initial-scale=1"/>
+      <title>{ title }</title>
+      
+      <!-- DNS Prefetch for performance -->
+      <link rel="dns-prefetch" href="//cdn.jsdelivr.net"/>
+      <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin/>
+      
+      <!-- Optimized Web Awesome Assets with preloading -->
+      <link rel="preload" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/themes/light.css" as="style" crossorigin/>
+      <link rel="preload" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/themes/dark.css" as="style" crossorigin/>
+      <link rel="preload" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/shoelace.css" as="style" crossorigin/>
+      <link rel="preload" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/shoelace-autoloader.js" as="script" crossorigin/>
+      
+      <!-- DaisyUI (existing) -->
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui/dist/full.min.css"/>
+      
+      <!-- Web Awesome CSS (optimized loading with media queries) -->
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/themes/light.css" media="(prefers-color-scheme: light)"/>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/themes/dark.css" media="(prefers-color-scheme: dark)"/>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/shoelace.css"/>
+      
+      <!-- Custom styles -->
+      <link rel="stylesheet" href="/static/styles/output.css?v=dev"/>
+      <link rel="stylesheet" href="/static/styles/overrides.css"/>
+      <link rel="stylesheet" href="/static/styles/webawesome-overrides.css"/>
+      
+      <!-- Optimized Web Awesome JavaScript -->
+      <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/shoelace-autoloader.js"></script>
+      
+      <!-- Existing JavaScript -->
+      <script defer src="/static/app.js"></script>
+      <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/csp/dist/cdn.min.js"></script>
+      <script src="https://unpkg.com/htmx.org"></script>
+      
+      <!-- Web Awesome Integration (optimized) -->
+      <script defer src="/static/js/webawesome-integration.js"></script>
+      
+      <!-- Performance Optimized Web Awesome Configuration -->
+      <script>
+        // Optimized Web Awesome component loading
+        (function() {
+          'use strict';
+          
+          // Set base path immediately for better performance
+          if (window.SlSetBasePath) {
+            window.SlSetBasePath('https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/');
+          }
+          
+          // Performance tracking
+          const perfStart = performance.now();
+          
+          // Theme switching functionality (optimized)
+          function setWebAwesomeTheme(theme) {
+            const themeStart = performance.now();
+            document.documentElement.classList.remove('sl-theme-light', 'sl-theme-dark');
+            document.documentElement.classList.add(`sl-theme-${theme}`);
+            localStorage.setItem('webawesome-theme', theme);
+            
+            // Log performance in development
+            if (window.location.hostname === 'localhost') {
+              console.log('Theme switched in', (performance.now() - themeStart).toFixed(2), 'ms');
+            }
+          }
+          
+          // Make theme function globally available
+          window.setWebAwesomeTheme = setWebAwesomeTheme;
+          
+          // Eager load critical components
+          const eagerComponents = ['sl-button', 'sl-input', 'sl-card', 'sl-badge'];
+          
+          // Lazy load on-demand components
+          const lazyComponents = ['sl-dialog', 'sl-drawer', 'sl-dropdown', 'sl-menu', 'sl-tooltip'];
+          
+          // Initialize theme based on DaisyUI theme (optimized)
+          document.addEventListener('DOMContentLoaded', function() {
+            const daisyTheme = document.documentElement.getAttribute('data-theme');
+            const isDark = daisyTheme === 'dim' || daisyTheme === 'dark' || daisyTheme === 'night';
+            const webAwesomeTheme = isDark ? 'dark' : 'light';
+            setWebAwesomeTheme(webAwesomeTheme);
+            
+            // Performance logging
+            const initTime = performance.now() - perfStart;
+            if (window.location.hostname === 'localhost') {
+              console.log('Web Awesome initialized in', initTime.toFixed(2), 'ms');
+            }
+            
+            // Set up intersection observer for lazy loading
+            if ('IntersectionObserver' in window) {
+              const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                  if (entry.isIntersecting) {
+                    const tagName = entry.target.tagName.toLowerCase();
+                    if (lazyComponents.includes(tagName)) {
+                      observer.unobserve(entry.target);
+                    }
+                  }
+                });
+              }, { rootMargin: '50px' });
+              
+              // Observe lazy components
+              lazyComponents.forEach(component => {
+                const elements = document.querySelectorAll(component);
+                elements.forEach(el => observer.observe(el));
+              });
+            }
+          });
+        })();
+      </script>
+    </head>
+    <body class="min-h-screen bg-base-100 text-base-content hero-gradient">
+      <div class="navbar bg-base-100/60 backdrop-blur rounded-box mt-4 border border-white/15 shadow-xl ring-1 ring-white/10">
+        <div class="flex-1 px-2 text-lg font-semibold"><a class="btn btn-ghost text-xl" href="/">Gothic Forge v10</a></div>
+        <div class="flex-none">
+          <!-- Theme switcher with Web Awesome support -->
+          <div class="dropdown dropdown-end">
+            <div tabindex="0" role="button" class="btn btn-ghost">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+              </svg>
+            </div>
+            <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+              <li><a onclick="switchTheme('light')">Light</a></li>
+              <li><a onclick="switchTheme('dark')">Dark</a></li>
+              <li><a onclick="switchTheme('dim')">Dim</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <main class="container mx-auto p-4 md:pt-8">
+        { children... }
+      </main>
+      <footer class="footer footer-center bg-base-100/60 backdrop-blur border border-white/10 p-4 mt-8 rounded-box mx-4 md:mx-auto max-w-5xl">
+        <aside>
+          <p>© { time.Now().Year() } Gothic Forge v10 - Optimized with Web Awesome!</p>
+        </aside>
+      </footer>
+      
+      <!-- Theme switching script (optimized) -->
+      <script>
+        function switchTheme(theme) {
+          // Update DaisyUI theme
+          document.documentElement.setAttribute('data-theme', theme);
+          
+          // Update Web Awesome theme (using optimized function)
+          const isDark = theme === 'dim' || theme === 'dark' || theme === 'night';
+          const webAwesomeTheme = isDark ? 'dark' : 'light';
+          if (window.setWebAwesomeTheme) {
+            window.setWebAwesomeTheme(webAwesomeTheme);
+          }
+          
+          // Save preference
+          localStorage.setItem('theme', theme);
+        }
+        
+        // Load saved theme on page load (optimized)
+        document.addEventListener('DOMContentLoaded', function() {
+          const savedTheme = localStorage.getItem('theme') || 'dim';
+          switchTheme(savedTheme);
+        });
+      </script>
+    </body>
+  </html>
+}

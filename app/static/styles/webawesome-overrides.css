@@ -1,0 +1,292 @@
+/* Web Awesome Integration Overrides for Gothic Forge */
+
+/* Ensure Web Awesome components work well with Tailwind CSS */
+:root {
+  /* Custom Web Awesome theme variables */
+  --sl-font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+  --sl-font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  
+  /* Smooth transitions for better UX */
+  --sl-transition-x-fast: 50ms;
+  --sl-transition-fast: 150ms;
+  --sl-transition-medium: 250ms;
+  --sl-transition-slow: 500ms;
+}
+
+/* Smooth theme transitions */
+html {
+  transition: background-color var(--sl-transition-medium) ease, 
+              color var(--sl-transition-medium) ease;
+}
+
+/* Web Awesome component spacing adjustments */
+sl-button + sl-button {
+  margin-left: 0.5rem;
+}
+
+sl-input + sl-input,
+sl-select + sl-select,
+sl-textarea + sl-textarea {
+  margin-top: 1rem;
+}
+
+/* Form layout improvements */
+.form-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .form-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Card enhancements */
+sl-card {
+  margin-bottom: 1.5rem;
+}
+
+sl-card::part(base) {
+  box-shadow: var(--sl-shadow-large);
+  border: 1px solid var(--sl-color-neutral-200);
+}
+
+.sl-theme-dark sl-card::part(base) {
+  border-color: var(--sl-color-neutral-700);
+}
+
+/* Navigation enhancements */
+.navbar-webawesome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  margin: 1rem;
+  background: var(--sl-color-neutral-50);
+  border: 1px solid var(--sl-color-neutral-200);
+  border-radius: var(--sl-border-radius-medium);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--sl-shadow-large);
+}
+
+.sl-theme-dark .navbar-webawesome {
+  background: var(--sl-color-neutral-900);
+  border-color: var(--sl-color-neutral-700);
+}
+
+/* Footer enhancements */
+.footer-webawesome {
+  text-align: center;
+  padding: 1rem;
+  margin: 1rem;
+  margin-top: 2rem;
+  background: var(--sl-color-neutral-50);
+  border: 1px solid var(--sl-color-neutral-200);
+  border-radius: var(--sl-border-radius-medium);
+  color: var(--sl-color-neutral-600);
+}
+
+.sl-theme-dark .footer-webawesome {
+  background: var(--sl-color-neutral-900);
+  border-color: var(--sl-color-neutral-700);
+  color: var(--sl-color-neutral-400);
+}
+
+/* HTMX integration enhancements */
+[hx-indicator] {
+  opacity: 0;
+  transition: opacity var(--sl-transition-fast) ease;
+}
+
+.htmx-request [hx-indicator] {
+  opacity: 1;
+}
+
+.htmx-request.htmx-indicator {
+  opacity: 1;
+}
+
+/* Loading states for HTMX */
+.htmx-request sl-button {
+  pointer-events: none;
+}
+
+.htmx-request sl-button::part(base) {
+  opacity: 0.7;
+}
+
+/* Focus management for accessibility */
+sl-dialog::part(panel):focus {
+  outline: 2px solid var(--sl-color-primary-600);
+  outline-offset: 2px;
+}
+
+sl-drawer::part(panel):focus {
+  outline: 2px solid var(--sl-color-primary-600);
+  outline-offset: 2px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .navbar-webawesome {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  sl-tab-group::part(nav) {
+    flex-wrap: wrap;
+  }
+}
+
+/* Print styles */
+@media print {
+  sl-button,
+  sl-dropdown,
+  .navbar-webawesome {
+    display: none !important;
+  }
+  
+  sl-card::part(base) {
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  sl-card::part(base) {
+    border-width: 2px;
+  }
+  
+  sl-button::part(base) {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    transition: none;
+  }
+  
+  sl-button::part(base),
+  sl-card::part(base),
+  sl-dialog::part(overlay),
+  sl-drawer::part(overlay) {
+    transition: none;
+  }
+}
+
+/* Custom utility classes for Web Awesome */
+.wa-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.wa-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.wa-grid-2 {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.wa-grid-3 {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.wa-grid-4 {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+/* Spacing utilities */
+.wa-space-y-2 > * + * {
+  margin-top: 0.5rem;
+}
+
+.wa-space-y-4 > * + * {
+  margin-top: 1rem;
+}
+
+.wa-space-y-6 > * + * {
+  margin-top: 1.5rem;
+}
+
+.wa-space-x-2 > * + * {
+  margin-left: 0.5rem;
+}
+
+.wa-space-x-4 > * + * {
+  margin-left: 1rem;
+}
+
+/* Component-specific enhancements */
+sl-alert {
+  margin-bottom: 1rem;
+}
+
+sl-progress-bar {
+  margin-bottom: 0.5rem;
+}
+
+sl-tab-group {
+  margin-bottom: 1.5rem;
+}
+
+/* Form validation styling */
+sl-input[data-invalid]::part(base),
+sl-select[data-invalid]::part(combobox),
+sl-textarea[data-invalid]::part(base) {
+  border-color: var(--sl-color-danger-600);
+}
+
+sl-input[data-invalid]::part(base):focus,
+sl-select[data-invalid]::part(combobox):focus,
+sl-textarea[data-invalid]::part(base):focus {
+  border-color: var(--sl-color-danger-600);
+  box-shadow: 0 0 0 var(--sl-focus-ring-width) var(--sl-color-danger-300);
+}
+
+/* Success states */
+sl-input[data-valid]::part(base),
+sl-select[data-valid]::part(combobox),
+sl-textarea[data-valid]::part(base) {
+  border-color: var(--sl-color-success-600);
+}
+
+/* Loading overlay for HTMX requests */
+.htmx-request::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.sl-theme-dark .htmx-request::after {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+/* Ensure proper stacking context */
+sl-dialog,
+sl-drawer {
+  z-index: 1000;
+}
+
+sl-dropdown {
+  z-index: 999;
+}
+
+sl-tooltip {
+  z-index: 1001;
+}
